@@ -1,5 +1,5 @@
 package ssh
 
 type AgentProvider interface {
-	Default() string
+	Default() (string, error)
 }

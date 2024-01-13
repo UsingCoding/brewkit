@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/ispringtech/brewkit/internal/frontend/app/buildconfig"
 	"github.com/ispringtech/brewkit/internal/frontend/app/builddefinition"
 	appconfig "github.com/ispringtech/brewkit/internal/frontend/app/config"
+	`github.com/ispringtech/brewkit/internal/frontend/app/version`
 )
 
 const (
@@ -29,19 +31,22 @@ type BuildParams struct {
 	Targets         []string // Target names to run
 	BuildDefinition string
 
+	Context   string
 	ForcePull bool
 }
 
 func NewBuildService(
 	configParser buildconfig.Parser,
 	definitionBuilder builddefinition.Builder,
-	builder api.BuilderAPI,
+	builderv1 api.BuilderAPI,
+	builderv2 api.BuilderAPI,
 	config appconfig.Config,
 ) BuildService {
 	return &buildService{
 		configParser:      configParser,
 		definitionBuilder: definitionBuilder,
-		builder:           builder,
+		builderv1:         builderv1,
+		builderv2:         builderv2,
 		config:            config,
 	}
 }
@@ -49,7 +54,8 @@ func NewBuildService(
 type buildService struct {
 	configParser      buildconfig.Parser
 	definitionBuilder builddefinition.Builder
-	builder           api.BuilderAPI
+	builderv1         api.BuilderAPI
+	builderv2         api.BuilderAPI
 	config            appconfig.Config
 }
 
@@ -76,12 +82,13 @@ func (service *buildService) Build(ctx context.Context, p BuildParams) error {
 		}
 	})
 
-	return service.builder.Build(
+	return service.builderAPI(c.APIVersion).Build(
 		ctx,
 		vertex,
 		definition.Vars,
 		secrets,
 		api.BuildParams{
+			Context:   p.Context,
 			ForcePull: p.ForcePull,
 		},
 	)
@@ -139,4 +146,15 @@ func (service *buildService) findTarget(target string, definition builddefinitio
 		return api.Vertex{}, errors.Errorf("target %s not found", target)
 	}
 	return maybe.Just(vertex), nil
+}
+
+func (service *buildService) builderAPI(v string) api.BuilderAPI {
+	switch v {
+	case version.APIVersionV1:
+		return service.builderv1
+	case version.APIVersionV2:
+		return service.builderv2
+	default:
+		panic(fmt.Sprintf("unknown apiVersion %s", v))
+	}
 }

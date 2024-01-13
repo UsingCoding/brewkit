@@ -4,12 +4,9 @@ import (
 	"context"
 )
 
-type BuildParams struct {
-	ForcePull bool
-}
-
-type ClearParams struct {
-	All bool
+type API interface {
+	BuilderAPI
+	CacheAPI
 }
 
 type BuilderAPI interface {

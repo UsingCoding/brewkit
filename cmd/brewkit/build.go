@@ -5,7 +5,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	backendapp "github.com/ispringtech/brewkit/internal/backend/app/build"
+	buildapp `github.com/ispringtech/brewkit/internal/backend/app/build`
+	"github.com/ispringtech/brewkit/internal/backend/app/buildlegacy"
+	`github.com/ispringtech/brewkit/internal/backend/infrastructure/buildkitd`
 	"github.com/ispringtech/brewkit/internal/backend/infrastructure/docker"
 	"github.com/ispringtech/brewkit/internal/backend/infrastructure/ssh"
 	"github.com/ispringtech/brewkit/internal/frontend/app/buildconfig"
@@ -25,6 +27,13 @@ func build(workdir string) *cli.Command {
 				Aliases: []string{"d"},
 				Value:   path.Join(workdir, buildconfig.DefaultName),
 				EnvVars: []string{"BREWKIT_BUILD_CONFIG"},
+			},
+			&cli.StringFlag{
+				Name:    "context",
+				Usage:   "Local build context",
+				Aliases: []string{"c"},
+				Value:   workdir,
+				EnvVars: []string{"BREWKIT_CONTEXT"},
 			},
 			&cli.BoolFlag{
 				Name:    "force-pull",
@@ -52,12 +61,14 @@ func build(workdir string) *cli.Command {
 type buildOps struct {
 	commonOpt
 	BuildDefinition string
+	Context         string
 	ForcePull       bool
 }
 
 func (o *buildOps) scan(ctx *cli.Context) {
 	o.commonOpt.scan(ctx)
 	o.BuildDefinition = ctx.String("definition")
+	o.Context = ctx.String("context")
 	o.ForcePull = ctx.Bool("force-pull")
 }
 
@@ -73,6 +84,7 @@ func executeBuild(ctx *cli.Context) error {
 	return buildService.Build(ctx.Context, service.BuildParams{
 		Targets:         ctx.Args().Slice(),
 		BuildDefinition: opts.BuildDefinition,
+		Context:         opts.Context,
 		ForcePull:       opts.ForcePull,
 	})
 }
@@ -134,22 +146,26 @@ func makeBuildService(options buildOps) (service.BuildService, error) {
 		return nil, err
 	}
 
-	agentProvider, err := ssh.NewAgentProvider()
-	if err != nil {
-		return nil, err
-	}
+	agentProvider := ssh.NewAgentProvider()
 
-	backendBuildService := backendapp.NewBuildService(
+	buildLegacyService := buildlegacy.NewBuildService(
 		dockerClient,
 		DockerfileImage,
 		agentProvider,
 		logger,
 	)
 
+	buildService := buildapp.NewService(
+		buildkitd.NewConnector(),
+		agentProvider,
+		options.verbose,
+	)
+
 	return service.NewBuildService(
 		parser,
 		builddefinition.NewBuilder(),
-		backendBuildService,
+		buildLegacyService,
+		buildService,
 		config,
 	), nil
 }

@@ -2,6 +2,7 @@ package dockerfile
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ispringtech/brewkit/internal/backend/api"
 	"github.com/ispringtech/brewkit/internal/common/maybe"
@@ -40,7 +41,9 @@ func (generator varGenerator) instructionsForVar(v api.Var) []dockerfile.Instruc
 	//nolint:prealloc
 	var instructions []dockerfile.Instruction
 
-	instructions = append(instructions, dockerfile.Workdir(v.WorkDir))
+	if w, ok := maybe.JustValid(v.WorkDir); ok {
+		instructions = append(instructions, dockerfile.Workdir(w))
+	}
 
 	for k, v := range v.Env {
 		instructions = append(instructions, dockerfile.Env{
@@ -86,7 +89,8 @@ func (generator varGenerator) instructionsForVar(v api.Var) []dockerfile.Instruc
 		network = maybe.Just(v.Network).Network
 	}
 
-	command := generator.transformToHeredoc(v.Command)
+	cmd := strings.Join(v.Command.Cmd, " ")
+	command := generator.transformToHeredoc(cmd)
 
 	instructions = append(instructions, dockerfile.Run{
 		Mounts:  mounts,

@@ -14,14 +14,14 @@ type VarData struct {
 	Name     string
 	From     string
 	Platform maybe.Maybe[string]
-	WorkDir  string
+	WorkDir  maybe.Maybe[string]
 	Env      map[string]string
 	Cache    []Cache
 	Copy     []Copy
 	Secrets  []Secret
 	Network  maybe.Maybe[string]
 	SSH      maybe.Maybe[SSH]
-	Command  string
+	Command  Command
 }
 
 type TargetData struct {
@@ -33,14 +33,14 @@ type TargetData struct {
 type StageData struct {
 	From     string
 	Env      map[string]string
-	Command  maybe.Maybe[string]
 	SSH      maybe.Maybe[SSH]
 	Cache    []Cache
 	Copy     []Copy
 	Secrets  []Secret
 	Platform maybe.Maybe[string]
-	WorkDir  string
+	WorkDir  maybe.Maybe[string]
 	Network  maybe.Maybe[string]
+	Command  maybe.Maybe[Command]
 	Output   maybe.Maybe[Output]
 }
 
@@ -60,6 +60,11 @@ type Copy struct {
 type Secret struct {
 	ID   string
 	Path string
+}
+
+type Command struct {
+	Cmd   []string
+	Shell bool
 }
 
 type Output struct {

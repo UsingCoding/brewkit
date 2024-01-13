@@ -14,3 +14,13 @@ func (m Maybe[T]) String() string {
 
 	return fmt.Sprintf("%s", v)
 }
+
+func (m Maybe[T]) GoString() string {
+	if !Valid(m) {
+		return ""
+	}
+
+	var v interface{} = Just(m)
+
+	return fmt.Sprintf("%#v", v)
+}

@@ -3,6 +3,7 @@ package dockerfile
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -154,7 +155,9 @@ func (generator targetGenerator) instructionsForStage(stage api.Stage) ([]docker
 	//nolint:prealloc
 	var instructions []dockerfile.Instruction
 
-	instructions = append(instructions, dockerfile.Workdir(stage.WorkDir))
+	if w, ok := maybe.JustValid(stage.WorkDir); ok {
+		instructions = append(instructions, dockerfile.Workdir(w))
+	}
 
 	for k, v := range stage.Env {
 		instructions = append(instructions, dockerfile.Env{
@@ -212,7 +215,8 @@ func (generator targetGenerator) instructionsForStage(stage api.Stage) ([]docker
 			network = maybe.Just(stage.Network).Network
 		}
 
-		command := generator.fillCommandWithVariables(maybe.Just(stage.Command))
+		cmd := strings.Join(maybe.Just(stage.Command).Cmd, " ")
+		command := generator.fillCommandWithVariables(cmd)
 
 		command = generator.transformToHeredoc(command)
 

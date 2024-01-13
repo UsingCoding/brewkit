@@ -220,7 +220,12 @@ func mapStage(
 			return api.SSH{}
 		}),
 		Secrets: mappedSecrets,
-		Command: s.Command,
+		Command: maybe.Map(s.Command, func(c buildconfig.Command) api.Command {
+			return api.Command{
+				Cmd:   c.Cmd,
+				Shell: c.Shell,
+			}
+		}),
 		Output: maybe.Map(s.Output, func(o buildconfig.Output) api.Output {
 			return api.Output{
 				Artifact: o.Artifact,

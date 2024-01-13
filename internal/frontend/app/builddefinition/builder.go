@@ -22,7 +22,7 @@ func NewBuilder() Builder {
 type builder struct{}
 
 func (builder builder) Build(c buildconfig.Config, secrets []config.Secret) (Definition, error) {
-	if c.APIVersion != version.APIVersionV1 {
+	if !version.Supports(c.APIVersion) {
 		return Definition{}, errors.Wrapf(ErrUnsupportedAPIVersion, "version: %s", c.APIVersion)
 	}
 
@@ -68,7 +68,7 @@ func (builder builder) variables(vars []buildconfig.VarData, secrets []config.Se
 				return api.SSH{}
 			}),
 			Secrets: mappedSecrets,
-			Command: v.Command,
+			Command: api.Command(v.Command),
 		}, nil
 	})
 }

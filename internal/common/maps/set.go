@@ -21,3 +21,14 @@ func SetFromSlice[T any, E comparable](s []T, f func(T) E) Set[E] {
 		return f(v), struct{}{}
 	})
 }
+
+// FromMapKeys creates set from maps keys
+func FromMapKeys[K comparable, V any](maps ...map[K]V) Set[K] {
+	res := Set[K]{}
+	for _, m := range maps {
+		for k := range m {
+			res.Add(k)
+		}
+	}
+	return res
+}

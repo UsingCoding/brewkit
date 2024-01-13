@@ -29,7 +29,7 @@ func (parser Parser) Parse(configPath string) (buildconfig.Config, error) {
 		return buildconfig.Config{}, errors.Wrap(err, "failed to parse json config")
 	}
 
-	return mapConfig(c), nil
+	return mapConfig(c)
 }
 
 func (parser Parser) CompileConfig(configPath string) (string, error) {
@@ -52,12 +52,19 @@ func (parser Parser) compileConfig(configPath string) (string, error) {
 	return data, errors.Wrap(err, "failed to compile jsonnet for build definition")
 }
 
-func mapConfig(c Config) buildconfig.Config {
+func mapConfig(c Config) (buildconfig.Config, error) {
+	targets := mapTargets(c.Targets)
+
+	vars, err := mapVars(c.Vars)
+	if err != nil {
+		return buildconfig.Config{}, err
+	}
+
 	return buildconfig.Config{
 		APIVersion: c.APIVersion,
-		Targets:    mapTargets(c.Targets),
-		Vars:       mapVars(c.Vars),
-	}
+		Targets:    targets,
+		Vars:       vars,
+	}, nil
 }
 
 func mapTargets(targets map[string]either.Either[[]string, Target]) []buildconfig.TargetData {
@@ -91,7 +98,7 @@ func mapStage(stage Stage) buildconfig.StageData {
 		Platform: stage.Platform,
 		WorkDir:  stage.WorkDir,
 		Env:      stage.Env,
-		Command:  stage.Command,
+		Command:  parseCmd(stage.Command),
 		SSH:      mapSSH(stage.SSH),
 		Cache:    slices.Map(stage.Cache, mapCache),
 		Copy:     parseCopy(stage.Copy),
@@ -108,15 +115,24 @@ func mapStage(stage Stage) buildconfig.StageData {
 	}
 }
 
-func mapVars(vars map[string]Var) []buildconfig.VarData {
+func mapVars(vars map[string]Var) ([]buildconfig.VarData, error) {
 	result := make([]buildconfig.VarData, 0, len(vars))
 	for name, v := range vars {
-		result = append(result, mapVar(name, v))
+		data, err := mapVar(name, v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "var %s", name)
+		}
+		result = append(result, data)
 	}
-	return result
+	return result, nil
 }
 
-func mapVar(name string, v Var) buildconfig.VarData {
+func mapVar(name string, v Var) (buildconfig.VarData, error) {
+	cmd := parseCmd(v.Command)
+	if !maybe.Valid(cmd) {
+		return buildconfig.VarData{}, errors.Errorf("command is required for var section")
+	}
+
 	return buildconfig.VarData{
 		Name:     name,
 		From:     v.From,
@@ -130,8 +146,8 @@ func mapVar(name string, v Var) buildconfig.VarData {
 		Network: maybe.Map(v.Network, func(n string) string {
 			return n
 		}),
-		Command: v.Command,
-	}
+		Command: maybe.Just(cmd),
+	}, nil
 }
 
 func mapSSH(ssh maybe.Maybe[SSH]) maybe.Maybe[buildconfig.SSH] {
@@ -156,6 +172,27 @@ func parseCopy(c either.Either[[]Copy, Copy]) (result []buildconfig.Copy) {
 			result = append(result, mapCopy(r))
 		})
 	return result
+}
+
+func parseCmd(cmd either.Either[[]string, string]) maybe.Maybe[buildconfig.Command] {
+	var (
+		res buildconfig.Command
+	)
+	cmd.
+		MapLeft(func(l []string) {
+			res.Cmd = l
+			res.Shell = false
+		}).
+		MapRight(func(r string) {
+			res.Cmd = append(res.Cmd, r)
+			res.Shell = true
+		})
+
+	if len(res.Cmd) == 0 {
+		return maybe.Maybe[buildconfig.Command]{}
+	}
+
+	return maybe.NewJust(res)
 }
 
 func mapCopy(c Copy) buildconfig.Copy {

@@ -9,6 +9,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
+
 	"github.com/ispringtech/brewkit/internal/dockerfile"
 	appconfig "github.com/ispringtech/brewkit/internal/frontend/app/config"
 )
