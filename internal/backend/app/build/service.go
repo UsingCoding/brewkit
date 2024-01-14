@@ -4,20 +4,21 @@ import (
 	`context`
 	`os`
 
-	buildkitclient `github.com/moby/buildkit/client`
-	`github.com/moby/buildkit/client/llb`
-	gatewayclient `github.com/moby/buildkit/frontend/gateway/client`
-	`github.com/moby/buildkit/session`
-	`github.com/moby/buildkit/util/progress/progresswriter`
-	`github.com/pkg/errors`
+	buildkitclient "github.com/moby/buildkit/client"
+	"github.com/moby/buildkit/client/llb"
+	gatewayclient "github.com/moby/buildkit/frontend/gateway/client"
+	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/util/progress/progresswriter"
+	"github.com/pkg/errors"
 
-	`github.com/ispringtech/brewkit/internal/backend/api`
-	`github.com/ispringtech/brewkit/internal/backend/app/buildkit`
-	llbconv `github.com/ispringtech/brewkit/internal/backend/app/llb`
-	`github.com/ispringtech/brewkit/internal/backend/app/progress`
-	`github.com/ispringtech/brewkit/internal/backend/app/progress/progresscatcher`
-	`github.com/ispringtech/brewkit/internal/backend/app/progress/progressui`
-	`github.com/ispringtech/brewkit/internal/backend/app/ssh`
+	"github.com/ispringtech/brewkit/internal/backend/api"
+	"github.com/ispringtech/brewkit/internal/backend/app/buildkit"
+	llbconv "github.com/ispringtech/brewkit/internal/backend/app/llb"
+	"github.com/ispringtech/brewkit/internal/backend/app/progress"
+	"github.com/ispringtech/brewkit/internal/backend/app/progress/progresscatcher"
+	"github.com/ispringtech/brewkit/internal/backend/app/progress/progresslabel"
+	"github.com/ispringtech/brewkit/internal/backend/app/progress/progressui"
+	"github.com/ispringtech/brewkit/internal/backend/app/ssh"
 )
 
 const (
@@ -92,18 +93,26 @@ func (s *service) solveVars(
 	vars []api.Var,
 	secrets []api.SecretSrc,
 ) (map[string]string, error) {
+	if len(vars) == 0 {
+		return nil, nil
+	}
+
 	var catcher progresscatcher.OutputCatcher
 
 	err := solver.solve(
 		ctx,
 		func() (progresswriter.Writer, error) {
-			pw, err := makeVarsProgressWriter(ctx)
+			var (
+				pw  progresswriter.Writer
+				err error
+			)
+
+			pw, catcher, err = makeVarsProgressWriter(ctx)
 			if err != nil {
 				return nil, err
 			}
 
-			pw, catcher = progresscatcher.New(pw)
-			return pw, nil
+			return pw, err
 		},
 		func() ([]session.Attachable, error) {
 			return s.makeVarsAttachable(vars, secrets)
@@ -152,20 +161,35 @@ func (s *service) solveVertex(
 	)
 }
 
-func makeVarsProgressWriter(ctx context.Context) (progresswriter.Writer, error) {
-	return progress.NewPrinter(
+func makeVarsProgressWriter(ctx context.Context) (progresswriter.Writer, progresscatcher.OutputCatcher, error) {
+	pw, err := progress.NewPrinter(
 		ctx,
 		os.Stderr,
 		progress.AUTO,
 		progressui.WithPhase("Solving variables"),
 	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pw, catcher := progresscatcher.New(pw)
+	pw = progresslabel.NewLabelsCleaner(pw)
+
+	return pw, catcher, nil
 }
 
 func makeVertexProgressWriter(ctx context.Context) (progresswriter.Writer, error) {
-	return progress.NewPrinter(
+	pw, err := progress.NewPrinter(
 		ctx,
 		os.Stderr,
 		progress.AUTO,
 		progressui.WithPhase("Building vertex"),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	pw = progresslabel.NewLabelsCleaner(pw)
+
+	return pw, nil
 }

@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/google/go-jsonnet"
 	"github.com/pkg/errors"
 
 	"github.com/ispringtech/brewkit/internal/common/either"
+	commonjson "github.com/ispringtech/brewkit/internal/common/json"
 	"github.com/ispringtech/brewkit/internal/common/maybe"
 	"github.com/ispringtech/brewkit/internal/common/slices"
 	"github.com/ispringtech/brewkit/internal/frontend/app/buildconfig"
@@ -53,7 +55,10 @@ func (parser Parser) compileConfig(configPath string) (string, error) {
 }
 
 func mapConfig(c Config) (buildconfig.Config, error) {
-	targets := mapTargets(c.Targets)
+	targets, err := mapTargets(c.Targets)
+	if err != nil {
+		return buildconfig.Config{}, err
+	}
 
 	vars, err := mapVars(c.Vars)
 	if err != nil {
@@ -67,8 +72,12 @@ func mapConfig(c Config) (buildconfig.Config, error) {
 	}, nil
 }
 
-func mapTargets(targets map[string]either.Either[[]string, Target]) []buildconfig.TargetData {
-	result := make([]buildconfig.TargetData, 0, len(targets))
+func mapTargets(targets map[string]either.Either[[]string, Target]) ([]buildconfig.TargetData, error) {
+	var (
+		result = make([]buildconfig.TargetData, 0, len(targets))
+		err    error
+	)
+
 	for name, target := range targets {
 		target.
 			MapLeft(func(dependsOn []string) {
@@ -79,20 +88,33 @@ func mapTargets(targets map[string]either.Either[[]string, Target]) []buildconfi
 				})
 			}).
 			MapRight(func(t Target) {
-				s := maybe.FromPtr(t.Stage)
+				var s maybe.Maybe[buildconfig.StageData]
+				s, err = maybe.MapErr(maybe.FromPtr(t.Stage), mapStage)
+				if err != nil {
+					err = errors.Wrapf(err, "failed to parse stage for %s", name)
+					return
+				}
 
 				result = append(result, buildconfig.TargetData{
 					Name:      name,
 					DependsOn: t.DependsOn,
-					Stage:     maybe.Map(s, mapStage),
+					Stage:     s,
 				})
 			})
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return result
+	return result, nil
 }
 
-func mapStage(stage Stage) buildconfig.StageData {
+func mapStage(stage Stage) (buildconfig.StageData, error) {
+	output, err := parseOutput(stage.Output)
+	if err != nil {
+		return buildconfig.StageData{}, err
+	}
+
 	return buildconfig.StageData{
 		From:     stage.From,
 		Platform: stage.Platform,
@@ -101,18 +123,13 @@ func mapStage(stage Stage) buildconfig.StageData {
 		Command:  parseCmd(stage.Command),
 		SSH:      mapSSH(stage.SSH),
 		Cache:    slices.Map(stage.Cache, mapCache),
-		Copy:     parseCopy(stage.Copy),
-		Secrets:  parseSecret(stage.Secrets),
+		Copy:     slices.Map(stage.Copy, mapCopy),
+		Secrets:  slices.Map(stage.Secrets, mapSecret),
 		Network: maybe.Map(stage.Network, func(n string) string {
 			return n
 		}),
-		Output: maybe.Map(stage.Output, func(o Output) buildconfig.Output {
-			return buildconfig.Output{
-				Artifact: o.Artifact,
-				Local:    o.Local,
-			}
-		}),
-	}
+		Output: output,
+	}, nil
 }
 
 func mapVars(vars map[string]Var) ([]buildconfig.VarData, error) {
@@ -141,8 +158,8 @@ func mapVar(name string, v Var) (buildconfig.VarData, error) {
 		Env:      v.Env,
 		SSH:      mapSSH(v.SSH),
 		Cache:    slices.Map(v.Cache, mapCache),
-		Copy:     parseCopy(v.Copy),
-		Secrets:  parseSecret(v.Secrets),
+		Copy:     slices.Map(v.Copy, mapCopy),
+		Secrets:  slices.Map(v.Secrets, mapSecret),
 		Network: maybe.Map(v.Network, func(n string) string {
 			return n
 		}),
@@ -161,17 +178,6 @@ func mapCache(cache Cache) buildconfig.Cache {
 		ID:   cache.ID,
 		Path: cache.Path,
 	}
-}
-
-func parseCopy(c either.Either[[]Copy, Copy]) (result []buildconfig.Copy) {
-	c.
-		MapLeft(func(l []Copy) {
-			result = slices.Map(l, mapCopy)
-		}).
-		MapRight(func(r Copy) {
-			result = append(result, mapCopy(r))
-		})
-	return result
 }
 
 func parseCmd(cmd either.Either[[]string, string]) maybe.Maybe[buildconfig.Command] {
@@ -203,20 +209,37 @@ func mapCopy(c Copy) buildconfig.Copy {
 	}
 }
 
-func parseSecret(s either.Either[[]Secret, Secret]) (result []buildconfig.Secret) {
-	s.
-		MapLeft(func(l []Secret) {
-			result = slices.Map(l, mapSecret)
-		}).
-		MapRight(func(r Secret) {
-			result = append(result, mapSecret(r))
-		})
-	return result
-}
-
 func mapSecret(secret Secret) buildconfig.Secret {
 	return buildconfig.Secret{
 		ID:   secret.ID,
 		Path: secret.Path,
 	}
+}
+
+func parseOutput(output commonjson.Slice[either.Either[Output, string]]) ([]buildconfig.Output, error) {
+	return slices.MapErr(output, func(o either.Either[Output, string]) (res buildconfig.Output, err error) {
+		o.
+			MapLeft(func(l Output) {
+				res = buildconfig.Output{
+					Artifact: l.Artifact,
+					Local:    l.Local,
+				}
+			}).
+			MapRight(func(r string) {
+				res, err = parseOutputShortNotation(r)
+			})
+		return res, err
+	})
+}
+
+func parseOutputShortNotation(s string) (buildconfig.Output, error) {
+	parts := strings.Split(s, ":")
+	if len(parts) != 2 {
+		return buildconfig.Output{}, errors.Errorf("invalid output literal: %s", s)
+	}
+
+	return buildconfig.Output{
+		Artifact: parts[0],
+		Local:    parts[1],
+	}, nil
 }

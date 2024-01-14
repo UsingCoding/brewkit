@@ -2,17 +2,17 @@ package llb
 
 import (
 	"context"
-	`os`
+	"os"
 	"strings"
-	`unicode/utf8`
+	"unicode/utf8"
 
 	"github.com/docker/docker/api/types/strslice"
-	`github.com/google/shlex`
+	"github.com/google/shlex"
 	"github.com/moby/buildkit/client/llb"
 
 	"github.com/ispringtech/brewkit/internal/backend/api"
 	"github.com/ispringtech/brewkit/internal/common/maybe"
-	`github.com/ispringtech/brewkit/internal/common/slices`
+	"github.com/ispringtech/brewkit/internal/common/slices"
 )
 
 type cmdDTO struct {

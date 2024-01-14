@@ -27,9 +27,3 @@ func (conv *CommonConverter) proceedCache(caches []api.Cache) (opts []llb.RunOpt
 	}
 	return
 }
-
-type cacheExports struct {
-	state llb.State
-	src   string
-	dst   string
-}

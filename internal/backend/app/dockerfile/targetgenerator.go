@@ -129,8 +129,9 @@ func (generator targetGenerator) stages(name string, stage api.Stage) ([]dockerf
 		},
 	}
 
-	if maybe.Valid(stage.Output) {
-		output := maybe.Just(stage.Output)
+	if len(stage.Output) != 0 {
+		// legacy build supports only one export
+		output := stage.Output[0]
 
 		const pwd = "."
 		stages = append(stages, dockerfile.Stage{

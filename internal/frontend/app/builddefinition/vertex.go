@@ -66,7 +66,7 @@ func (builder *vertexGraphBuilder) recursiveGraph(vertex string) (api.Vertex, er
 
 	var (
 		fromV     maybe.Maybe[*api.Vertex]
-		copyDirs  []api.Copy
+		copies    []api.Copy
 		dependsOn []api.Vertex
 	)
 
@@ -86,7 +86,7 @@ func (builder *vertexGraphBuilder) recursiveGraph(vertex string) (api.Vertex, er
 
 		if len(stage.Copy) != 0 {
 			var err error
-			copyDirs, err = builder.walkCopy(vertex, stage.Copy)
+			copies, err = builder.walkCopy(vertex, stage.Copy)
 			if err != nil {
 				return api.Vertex{}, err
 			}
@@ -104,7 +104,7 @@ func (builder *vertexGraphBuilder) recursiveGraph(vertex string) (api.Vertex, er
 	var stage maybe.Maybe[api.Stage]
 
 	stage, err := maybe.MapErr(t.Stage, func(s buildconfig.StageData) (api.Stage, error) {
-		return mapStage(t.Name, maybe.Just(t.Stage), copyDirs, builder.secrets)
+		return mapStage(t.Name, s, copies, builder.secrets)
 	})
 	if err != nil {
 		return api.Vertex{}, err
@@ -135,14 +135,14 @@ func (builder *vertexGraphBuilder) walkFrom(vertexName, fromVName string) (*api.
 }
 
 // solves 'copy' dependencies
-func (builder *vertexGraphBuilder) walkCopy(vertexName string, copyDirs []buildconfig.Copy) ([]api.Copy, error) {
+func (builder *vertexGraphBuilder) walkCopy(vertexName string, copies []buildconfig.Copy) ([]api.Copy, error) {
 	builder.trace.push(traceEntry{
 		name:      vertexName,
 		directive: copyDirective,
 	})
 	defer builder.trace.pop()
 
-	return slices.MapErr(copyDirs, func(c buildconfig.Copy) (api.Copy, error) {
+	return slices.MapErr(copies, func(c buildconfig.Copy) (api.Copy, error) {
 		if !maybe.Valid(c.From) {
 			return api.Copy{
 				Src: c.Src,
@@ -194,7 +194,7 @@ func (builder *vertexGraphBuilder) walkDependsOn(vertexName string, t buildconfi
 func mapStage(
 	stageName string,
 	s buildconfig.StageData,
-	copyDirs []api.Copy,
+	copies []api.Copy,
 	secrets []config.Secret,
 ) (api.Stage, error) {
 	mappedSecrets, err := mapSecrets(s.Secrets, secrets)
@@ -210,7 +210,7 @@ func mapStage(
 		WorkDir: s.WorkDir,
 		Env:     s.Env,
 		Cache:   slices.Map(s.Cache, mapCache),
-		Copy:    copyDirs,
+		Copy:    copies,
 		Network: maybe.Map(s.Network, func(n string) api.Network {
 			return api.Network{
 				Network: n,
@@ -226,7 +226,7 @@ func mapStage(
 				Shell: c.Shell,
 			}
 		}),
-		Output: maybe.Map(s.Output, func(o buildconfig.Output) api.Output {
+		Output: slices.Map(s.Output, func(o buildconfig.Output) api.Output {
 			return api.Output{
 				Artifact: o.Artifact,
 				Local:    o.Local,

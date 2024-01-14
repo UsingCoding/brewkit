@@ -2,6 +2,7 @@ package builddefinition
 
 import (
 	"github.com/ispringtech/brewkit/internal/common/either"
+	commonjson "github.com/ispringtech/brewkit/internal/common/json"
 	"github.com/ispringtech/brewkit/internal/common/maybe"
 )
 
@@ -17,17 +18,17 @@ type Target struct {
 }
 
 type Stage struct {
-	From     string                          `json:"from"`
-	Env      map[string]string               `json:"env"`
-	SSH      maybe.Maybe[SSH]                `json:"ssh"`
-	Cache    []Cache                         `json:"cache"`
-	Copy     either.Either[[]Copy, Copy]     `json:"copy"`
-	Secrets  either.Either[[]Secret, Secret] `json:"secret"`
-	Platform maybe.Maybe[string]             `json:"platform"`
-	WorkDir  maybe.Maybe[string]             `json:"workdir"`
-	Network  maybe.Maybe[string]             `json:"network"`
-	Command  either.Either[[]string, string] `json:"command"`
-	Output   maybe.Maybe[Output]             `json:"output"`
+	From     string                                          `json:"from"`
+	Env      map[string]string                               `json:"env"`
+	SSH      maybe.Maybe[SSH]                                `json:"ssh"`
+	Cache    commonjson.Slice[Cache]                         `json:"cache"`
+	Copy     commonjson.Slice[Copy]                          `json:"copy"`
+	Secrets  commonjson.Slice[Secret]                        `json:"secret"`
+	Platform maybe.Maybe[string]                             `json:"platform"`
+	WorkDir  maybe.Maybe[string]                             `json:"workdir"`
+	Network  maybe.Maybe[string]                             `json:"network"`
+	Command  either.Either[[]string, string]                 `json:"command"`
+	Output   commonjson.Slice[either.Either[Output, string]] `json:"output"`
 }
 
 type Var struct {
@@ -35,9 +36,9 @@ type Var struct {
 	Platform maybe.Maybe[string]             `json:"platform"`
 	WorkDir  maybe.Maybe[string]             `json:"workdir"`
 	Env      map[string]string               `json:"env"`
-	Cache    []Cache                         `json:"cache"`
-	Copy     either.Either[[]Copy, Copy]     `json:"copy"`
-	Secrets  either.Either[[]Secret, Secret] `json:"secrets"`
+	Cache    commonjson.Slice[Cache]         `json:"cache"`
+	Copy     commonjson.Slice[Copy]          `json:"copy"`
+	Secrets  commonjson.Slice[Secret]        `json:"secrets"`
 	Network  maybe.Maybe[string]             `json:"network"`
 	SSH      maybe.Maybe[SSH]                `json:"ssh"`
 	Command  either.Either[[]string, string] `json:"command"`

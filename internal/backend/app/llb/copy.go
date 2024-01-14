@@ -1,10 +1,10 @@
 package llb
 
 import (
-	`github.com/moby/buildkit/client/llb`
+	"github.com/moby/buildkit/client/llb"
 
-	`github.com/ispringtech/brewkit/internal/common/either`
-	`github.com/ispringtech/brewkit/internal/common/maybe`
+	"github.com/ispringtech/brewkit/internal/common/either"
+	"github.com/ispringtech/brewkit/internal/common/maybe"
 )
 
 type copyDTO struct {

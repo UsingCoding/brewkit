@@ -5,6 +5,7 @@ import (
 
 	`github.com/moby/buildkit/client/llb`
 	gatewayclient `github.com/moby/buildkit/frontend/gateway/client`
+	`github.com/pkg/errors`
 
 	`github.com/ispringtech/brewkit/internal/backend/api`
 	`github.com/ispringtech/brewkit/internal/backend/app/progress/progresslabel`
@@ -22,8 +23,7 @@ func NewVertexConverter(commonConverter *CommonConverter, vars Vars) *VertexConv
 		CommonConverter: commonConverter,
 		vars:            vars,
 		visitedVertexes: map[string]llb.State{},
-		exports:         map[string]api.Output{},
-		cacheExports:    map[string]cacheExports{},
+		exports:         map[string][]api.Output{},
 	}
 }
 
@@ -33,8 +33,7 @@ type VertexConverter struct {
 	vars Vars
 
 	visitedVertexes map[string]llb.State
-	exports         map[string]api.Output
-	cacheExports    map[string]cacheExports
+	exports         map[string][]api.Output
 }
 
 func (conv *VertexConverter) VertexToLLB(
@@ -47,20 +46,14 @@ func (conv *VertexConverter) VertexToLLB(
 		return llb.State{}, err
 	}
 
-	res, err := conv.vertexToState(ctx, v)
+	st, err := conv.vertexToState(ctx, v)
 	if err != nil {
 		return llb.State{}, err
 	}
 
-	if res.Output() != nil {
-		res = res.File(
-			// use wildcard to clear filesystem since llbsolver ensures that path is not absolute
-			llb.Rm("/*", &llb.RmInfo{
-				AllowNotFound: true,
-				AllowWildcard: true,
-			}),
-			llb.WithCustomName(progresslabel.MakeLabelf(progresslabel.HiddenLabel, "Clear result state")),
-		)
+	res, err := conv.prepareExportState(ctx, st)
+	if err != nil {
+		return llb.State{}, errors.Wrap(err, "failed to prepare export state")
 	}
 
 	res, err = conv.proceedExport(res)
@@ -77,6 +70,7 @@ func (conv *VertexConverter) vertexToState(ctx context.Context, v *api.Vertex) (
 	}
 
 	st := llb.Scratch()
+	st = st.WithValue(targetKey, v.Name)
 
 	if from, ok := maybe.JustValid(v.From); ok {
 		var err error
@@ -84,9 +78,17 @@ func (conv *VertexConverter) vertexToState(ctx context.Context, v *api.Vertex) (
 		if err != nil {
 			return llb.State{}, err
 		}
+
+		st = st.WithValue(targetKey, v.Name)
 	}
 
-	st = st.WithValue(targetKey, v.Name)
+	if stage, ok := maybe.JustValid(v.Stage); ok && st.Output() == nil {
+		// nil output means that FS of state is not initialized
+		// so, it may be a scratch
+
+		st = conv.llbImage(stage.From)
+		st = st.WithValue(targetKey, v.Name)
+	}
 
 	if len(v.DependsOn) != 0 {
 		deps, err := slices.MapErr(v.DependsOn, func(dep api.Vertex) (llb.State, error) {
@@ -103,19 +105,14 @@ func (conv *VertexConverter) vertexToState(ctx context.Context, v *api.Vertex) (
 	}
 
 	if stage, ok := maybe.JustValid(v.Stage); ok {
-		// TODO: raise above DependsOn composing
-		if st.Output() == nil {
-			st = conv.llbImage(stage.From)
-		}
-
 		var err error
 		st, err = conv.populateState(ctx, stage, st)
 		if err != nil {
 			return llb.State{}, err
 		}
 
-		if o, ok := maybe.JustValid(stage.Output); ok {
-			conv.exports[v.Name] = o
+		if len(stage.Output) != 0 {
+			conv.exports[v.Name] = stage.Output
 		}
 	}
 
@@ -194,4 +191,25 @@ func (conv *VertexConverter) convertFromForCopy(
 		})
 
 	return res, err
+}
+
+func (conv *VertexConverter) prepareExportState(ctx context.Context, convertedState llb.State) (llb.State, error) {
+	res := llb.Scratch()
+	res = res.WithValue(targetKey, "Export state")
+
+	res, err := compose(ctx, res, convertedState)
+	if err != nil {
+		return llb.State{}, err
+	}
+
+	res = res.File(
+		// use wildcard to clear filesystem since llbsolver ensures that path is not absolute
+		llb.Rm("/*", &llb.RmInfo{
+			AllowNotFound: true,
+			AllowWildcard: true,
+		}),
+		llb.WithCustomName(progresslabel.MakeLabelf(progresslabel.HiddenLabel, "Clear result state")),
+	)
+
+	return res, nil
 }

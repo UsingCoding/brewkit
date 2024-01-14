@@ -1,4 +1,4 @@
-package progress
+package progressinterceptor
 
 import (
 	stderrors "errors"

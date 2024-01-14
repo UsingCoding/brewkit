@@ -155,8 +155,9 @@ func (service *buildService) buildVertex(
 		var output maybe.Maybe[string]
 
 		stage := maybe.Just(v.Stage)
-		if maybe.Valid(stage.Output) {
-			o := maybe.Just(stage.Output)
+		if len(stage.Output) != 0 {
+			// legacy build supports only one export
+			o := stage.Output[0]
 
 			// Execute output stage to save artifacts
 			targetName = fmt.Sprintf("%s-out", v.Name)
@@ -292,7 +293,7 @@ func (service *buildService) listVarsImages(vars []api.Var, images maps.Set[stri
 func shouldExplicitRunFrom(v api.Vertex) bool {
 	var hasOutput bool
 	if maybe.Valid(v.Stage) {
-		hasOutput = maybe.Valid(maybe.Just(v.Stage).Output)
+		hasOutput = len(maybe.Just(v.Stage).Output) != 0
 	}
 
 	hasDependsOn := len(v.DependsOn) > 0

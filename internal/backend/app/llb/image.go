@@ -1,19 +1,19 @@
 package llb
 
 import (
-	`context`
-	`encoding/json`
+	"context"
+	"encoding/json"
 
-	`github.com/docker/distribution/reference`
-	`github.com/moby/buildkit/client/llb`
-	containerimage `github.com/moby/buildkit/exporter/containerimage/image`
-	gatewayclient `github.com/moby/buildkit/frontend/gateway/client`
-	`github.com/pkg/errors`
-	`golang.org/x/sync/errgroup`
+	"github.com/docker/distribution/reference"
+	"github.com/moby/buildkit/client/llb"
+	containerimage "github.com/moby/buildkit/exporter/containerimage/image"
+	gatewayclient "github.com/moby/buildkit/frontend/gateway/client"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
-	`github.com/ispringtech/brewkit/internal/backend/api`
-	`github.com/ispringtech/brewkit/internal/common/maps`
-	`github.com/ispringtech/brewkit/internal/common/maybe`
+	"github.com/ispringtech/brewkit/internal/backend/api"
+	"github.com/ispringtech/brewkit/internal/common/maps"
+	"github.com/ispringtech/brewkit/internal/common/maybe"
 )
 
 const (

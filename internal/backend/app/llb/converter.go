@@ -1,9 +1,9 @@
 package llb
 
 import (
-	`github.com/moby/buildkit/client/llb`
+	"github.com/moby/buildkit/client/llb"
 
-	`github.com/ispringtech/brewkit/internal/backend/app/progress/progresslabel`
+	"github.com/ispringtech/brewkit/internal/backend/app/progress/progresslabel"
 )
 
 func NewConverter(

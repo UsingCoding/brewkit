@@ -5,7 +5,7 @@ import (
 	"github.com/moby/buildkit/util/progress/progresswriter"
 	"github.com/opencontainers/go-digest"
 
-	"github.com/ispringtech/brewkit/internal/backend/app/progress"
+	"github.com/ispringtech/brewkit/internal/backend/app/progress/progressinterceptor"
 	"github.com/ispringtech/brewkit/internal/backend/app/progress/progresslabel"
 )
 
@@ -18,7 +18,7 @@ func New(w progresswriter.Writer) (progresswriter.Writer, OutputCatcher) {
 		logs:         map[string][]byte{},
 		catchDigests: map[digest.Digest]string{},
 	}
-	w = progress.Intercept(w, c.intercept)
+	w = progressinterceptor.Intercept(w, c.intercept)
 
 	return w, c
 }

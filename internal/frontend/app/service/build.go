@@ -13,7 +13,7 @@ import (
 	"github.com/ispringtech/brewkit/internal/frontend/app/buildconfig"
 	"github.com/ispringtech/brewkit/internal/frontend/app/builddefinition"
 	appconfig "github.com/ispringtech/brewkit/internal/frontend/app/config"
-	`github.com/ispringtech/brewkit/internal/frontend/app/version`
+	"github.com/ispringtech/brewkit/internal/frontend/app/version"
 )
 
 const (

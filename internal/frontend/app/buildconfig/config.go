@@ -41,7 +41,7 @@ type StageData struct {
 	WorkDir  maybe.Maybe[string]
 	Network  maybe.Maybe[string]
 	Command  maybe.Maybe[Command]
-	Output   maybe.Maybe[Output]
+	Output   []Output
 }
 
 type SSH struct{}

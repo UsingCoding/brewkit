@@ -26,7 +26,7 @@ type Stage struct {
 	SSH      maybe.Maybe[SSH]     // SSH access options
 	Secrets  []Secret
 	Command  maybe.Maybe[Command] // Command for stage
-	Output   maybe.Maybe[Output]  // Output artifacts from builder
+	Output   []Output             // Output artifacts from builder
 }
 
 type Image struct {
