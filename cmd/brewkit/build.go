@@ -5,9 +5,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	buildapp `github.com/ispringtech/brewkit/internal/backend/app/build`
+	buildapp "github.com/ispringtech/brewkit/internal/backend/app/build"
 	"github.com/ispringtech/brewkit/internal/backend/app/buildlegacy"
-	`github.com/ispringtech/brewkit/internal/backend/infrastructure/buildkitd`
+	"github.com/ispringtech/brewkit/internal/backend/infrastructure/buildkitd"
 	"github.com/ispringtech/brewkit/internal/backend/infrastructure/docker"
 	"github.com/ispringtech/brewkit/internal/backend/infrastructure/ssh"
 	"github.com/ispringtech/brewkit/internal/frontend/app/buildconfig"

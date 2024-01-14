@@ -1,17 +1,17 @@
 package llb
 
 import (
-	`context`
+	"context"
 
-	`github.com/moby/buildkit/client/llb`
-	gatewayclient `github.com/moby/buildkit/frontend/gateway/client`
-	`github.com/pkg/errors`
+	"github.com/moby/buildkit/client/llb"
+	gatewayclient "github.com/moby/buildkit/frontend/gateway/client"
+	"github.com/pkg/errors"
 
-	`github.com/ispringtech/brewkit/internal/backend/api`
-	`github.com/ispringtech/brewkit/internal/backend/app/progress/progresslabel`
-	`github.com/ispringtech/brewkit/internal/common/either`
-	`github.com/ispringtech/brewkit/internal/common/maybe`
-	`github.com/ispringtech/brewkit/internal/common/slices`
+	"github.com/ispringtech/brewkit/internal/backend/api"
+	"github.com/ispringtech/brewkit/internal/backend/app/progress/progresslabel"
+	"github.com/ispringtech/brewkit/internal/common/either"
+	"github.com/ispringtech/brewkit/internal/common/maybe"
+	"github.com/ispringtech/brewkit/internal/common/slices"
 )
 
 type (

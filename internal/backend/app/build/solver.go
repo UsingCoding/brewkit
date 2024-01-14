@@ -1,17 +1,17 @@
 package build
 
 import (
-	`context`
+	"context"
 
-	buildkitclient `github.com/moby/buildkit/client`
-	`github.com/moby/buildkit/client/llb`
-	gatewayclient `github.com/moby/buildkit/frontend/gateway/client`
-	`github.com/moby/buildkit/session`
-	`github.com/moby/buildkit/util/progress/progresswriter`
-	`github.com/pkg/errors`
-	`golang.org/x/sync/errgroup`
+	buildkitclient "github.com/moby/buildkit/client"
+	"github.com/moby/buildkit/client/llb"
+	gatewayclient "github.com/moby/buildkit/frontend/gateway/client"
+	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/util/progress/progresswriter"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
-	`github.com/ispringtech/brewkit/internal/backend/app/buildkit`
+	"github.com/ispringtech/brewkit/internal/backend/app/buildkit"
 )
 
 type buildSolver struct {

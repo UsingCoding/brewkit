@@ -1,17 +1,17 @@
 package build
 
 import (
-	`os`
+	"os"
 
-	dockerconfig `github.com/docker/cli/cli/config`
-	`github.com/moby/buildkit/session`
-	`github.com/moby/buildkit/session/auth/authprovider`
-	`github.com/moby/buildkit/session/secrets/secretsprovider`
-	`github.com/moby/buildkit/session/sshforward/sshprovider`
+	dockerconfig "github.com/docker/cli/cli/config"
+	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/session/auth/authprovider"
+	"github.com/moby/buildkit/session/secrets/secretsprovider"
+	"github.com/moby/buildkit/session/sshforward/sshprovider"
 
-	`github.com/ispringtech/brewkit/internal/backend/api`
-	`github.com/ispringtech/brewkit/internal/common/maybe`
-	`github.com/ispringtech/brewkit/internal/common/slices`
+	"github.com/ispringtech/brewkit/internal/backend/api"
+	"github.com/ispringtech/brewkit/internal/common/maybe"
+	"github.com/ispringtech/brewkit/internal/common/slices"
 )
 
 func (s *service) makeVertexAttachable(v api.Vertex, secrets []api.SecretSrc) ([]session.Attachable, error) {

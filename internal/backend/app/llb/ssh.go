@@ -1,10 +1,10 @@
 package llb
 
 import (
-	`github.com/moby/buildkit/client/llb`
+	"github.com/moby/buildkit/client/llb"
 
-	`github.com/ispringtech/brewkit/internal/backend/api`
-	`github.com/ispringtech/brewkit/internal/common/maybe`
+	"github.com/ispringtech/brewkit/internal/backend/api"
+	"github.com/ispringtech/brewkit/internal/common/maybe"
 )
 
 func (conv *CommonConverter) proceedSSH(ssh maybe.Maybe[api.SSH]) maybe.Maybe[llb.RunOption] {

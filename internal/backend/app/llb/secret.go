@@ -1,10 +1,10 @@
 package llb
 
 import (
-	`github.com/moby/buildkit/client/llb`
+	"github.com/moby/buildkit/client/llb"
 
-	`github.com/ispringtech/brewkit/internal/backend/api`
-	`github.com/ispringtech/brewkit/internal/common/slices`
+	"github.com/ispringtech/brewkit/internal/backend/api"
+	"github.com/ispringtech/brewkit/internal/common/slices"
 )
 
 func (conv *CommonConverter) proceedSecrets(secrets []api.Secret) []llb.RunOption {
