@@ -106,7 +106,7 @@ func (conv *VertexConverter) vertexToState(ctx context.Context, v *api.Vertex) (
 
 	if stage, ok := maybe.JustValid(v.Stage); ok {
 		var err error
-		st, err = conv.populateState(ctx, stage, st)
+		st, err = conv.populateState(ctx, v.Name, stage, st)
 		if err != nil {
 			return llb.State{}, err
 		}
@@ -121,7 +121,7 @@ func (conv *VertexConverter) vertexToState(ctx context.Context, v *api.Vertex) (
 	return st, nil
 }
 
-func (conv *VertexConverter) populateState(ctx context.Context, s api.Stage, st llb.State) (llb.State, error) {
+func (conv *VertexConverter) populateState(ctx context.Context, vertexName string, s api.Stage, st llb.State) (llb.State, error) {
 	if w, ok := maybe.JustValid(s.WorkDir); ok {
 		st = st.Dir(w)
 	}
@@ -140,6 +140,7 @@ func (conv *VertexConverter) populateState(ctx context.Context, s api.Stage, st 
 			From: from,
 			Src:  c.Src,
 			Dst:  c.Dst,
+			Name: makeCopyLabelVertex(vertexName, c),
 		}, nil
 	})
 	if err != nil {
@@ -152,11 +153,12 @@ func (conv *VertexConverter) populateState(ctx context.Context, s api.Stage, st 
 	}
 
 	st, err = conv.proceedCommand(ctx, cmdDTO{
+		name:    vertexName,
+		params:  conv.vars,
 		command: s.Command,
 		cache:   s.Cache,
 		ssh:     s.SSH,
 		secrets: s.Secrets,
-		params:  conv.vars,
 	}, st)
 	if err != nil {
 		return llb.State{}, err

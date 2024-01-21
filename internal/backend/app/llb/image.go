@@ -3,6 +3,7 @@ package llb
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"github.com/docker/distribution/reference"
 	"github.com/moby/buildkit/client/llb"
@@ -49,6 +50,9 @@ func (conv *CommonConverter) resolveImages(
 		return nil
 	}
 
+	// sync access to conv.resolvedImages
+	var m sync.Mutex
+
 	eg, ctx := errgroup.WithContext(ctx)
 	for ref := range images {
 		imgRef := ref
@@ -85,6 +89,9 @@ func (conv *CommonConverter) resolveImages(
 			if len(img.Config.Shell) > 0 {
 				st = st.WithValue(shellKey, img.Config.Shell)
 			}
+
+			m.Lock()
+			defer m.Unlock()
 
 			conv.resolvedImages[imgRef] = image{
 				meta: img,

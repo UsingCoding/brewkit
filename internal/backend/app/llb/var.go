@@ -74,27 +74,24 @@ func (conv *VarsConverter) varToState(ctx context.Context, v api.Var) (llb.State
 			From: from,
 			Src:  c.Src,
 			Dst:  c.Dst,
+			Name: makeCopyLabelVar(v.Name, c),
 		}
 	}), st)
 	if err != nil {
 		return llb.State{}, err
 	}
 
-	label, err := progresscatcher.MakeCatchLabelf(
-		v.Name,
-		cmdCustomName(v.Command.Cmd),
-	)
-	if err != nil {
-		return llb.State{}, errors.Wrapf(err, "failed to make label for var %s", v.Name)
-	}
+	// make catch payload to intercept output from var
+	payload := progresscatcher.MakeCatchLabelPayload(v.Name)
 
 	st, err = conv.proceedCommand(ctx, cmdDTO{
-		command:     maybe.NewJust(v.Command),
-		cache:       v.Cache,
-		ssh:         v.SSH,
-		secrets:     v.Secrets,
-		ignoreCache: true, // ignore build cache for variables
-		label:       label,
+		name:         v.Name,
+		command:      maybe.NewJust(v.Command),
+		cache:        v.Cache,
+		ssh:          v.SSH,
+		secrets:      v.Secrets,
+		ignoreCache:  true, // ignore build cache for variables
+		labelPayload: payload,
 	}, st)
 	if err != nil {
 		return llb.State{}, err

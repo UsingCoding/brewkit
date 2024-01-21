@@ -25,13 +25,13 @@ func MakeLabelf(l, format string, a ...any) string {
 	return l + separator + fmt.Sprintf(format, a...)
 }
 
-func MakePayloadLabel(payload map[string]string, format string, a ...any) (string, error) {
+func MakePayloadLabel(payload map[string]string, text string) (string, error) {
 	p, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
 	}
 
-	return string(p) + payloadSeparator + fmt.Sprintf(format, a...), nil
+	return string(p) + payloadSeparator + text, nil
 }
 
 func ParseLabel(s string) (label, text string) {

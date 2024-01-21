@@ -11,6 +11,8 @@ type copyDTO struct {
 	From maybe.Maybe[either.Either[llb.State, string]]
 	Src  string
 	Dst  string
+
+	Name string
 }
 
 func (conv *CommonConverter) proceedCopy(copyDTO []copyDTO, st llb.State) (llb.State, error) {
@@ -43,7 +45,7 @@ func (conv *CommonConverter) proceedCopy(copyDTO []copyDTO, st llb.State) (llb.S
 				AllowWildcard:       true,
 				AllowEmptyWildcard:  true,
 			},
-		))
+		), llb.WithCustomName(c.Name))
 	}
 
 	return st, nil

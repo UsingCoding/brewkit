@@ -11,18 +11,20 @@ import (
 	"github.com/moby/buildkit/client/llb"
 
 	"github.com/ispringtech/brewkit/internal/backend/api"
+	"github.com/ispringtech/brewkit/internal/backend/app/progress/progresslabel"
 	"github.com/ispringtech/brewkit/internal/common/maybe"
 	"github.com/ispringtech/brewkit/internal/common/slices"
 )
 
 type cmdDTO struct {
-	command maybe.Maybe[api.Command]
-	cache   []api.Cache
-	ssh     maybe.Maybe[api.SSH]
-	secrets []api.Secret
+	name         string
+	labelPayload map[string]string
 
+	command     maybe.Maybe[api.Command]
+	cache       []api.Cache
+	ssh         maybe.Maybe[api.SSH]
+	secrets     []api.Secret
 	ignoreCache bool
-	label       string
 
 	params map[string]string
 }
@@ -36,7 +38,7 @@ func (conv *CommonConverter) proceedCommand(ctx context.Context, c cmdDTO, st ll
 	args := command.Cmd
 	args = proceedParams(args, c.params)
 
-	customName := cmdCustomName(args)
+	customName := customCmdName(c.name, args)
 
 	if command.Shell {
 		value, err := st.Value(ctx, shellKey)
@@ -67,8 +69,12 @@ func (conv *CommonConverter) proceedCommand(ctx context.Context, c cmdDTO, st ll
 		options = append(options, llb.IgnoreCache)
 	}
 
-	if c.label != "" {
-		customName = c.label
+	if len(c.labelPayload) != 0 {
+		var err error
+		customName, err = progresslabel.MakePayloadLabel(c.labelPayload, customName)
+		if err != nil {
+			return llb.State{}, err
+		}
 	}
 	options = append(options, llb.WithCustomName(customName))
 
@@ -95,7 +101,13 @@ func defaultShell() []string {
 	return []string{"/bin/sh", "-c"}
 }
 
-func cmdCustomName(args []string) string {
+func customCmdName(name string, args []string) string {
+	a := processArgs(args)
+
+	return name + ": " + a
+}
+
+func processArgs(args []string) string {
 	const (
 		maxLen = 15
 	)
