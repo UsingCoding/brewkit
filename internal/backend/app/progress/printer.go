@@ -7,8 +7,6 @@ import (
 
 	"github.com/containerd/console"
 	"github.com/moby/buildkit/client"
-	"github.com/pkg/errors"
-
 	`github.com/moby/buildkit/util/progress/progresswriter`
 
 	`github.com/ispringtech/brewkit/internal/backend/app/progress/progressui`
@@ -39,7 +37,7 @@ func NewPrinter(
 	ctx context.Context,
 	out console.File,
 	mode string,
-	opts ...progressui.DisplaySolveStatusOpt,
+	opts ...progressui.DisplayOpt,
 ) (progresswriter.Writer, error) {
 	statusCh := make(chan *client.SolveStatus)
 	doneCh := make(chan struct{})
@@ -53,23 +51,14 @@ func NewPrinter(
 		mode = v
 	}
 
-	var c console.Console
-	switch mode {
-	case "auto", "tty", "":
-		if cons, err := console.ConsoleFromFile(out); err == nil {
-			c = cons
-		} else {
-			if mode == "tty" {
-				return nil, errors.Wrap(err, "failed to get console")
-			}
-		}
-	case "plain":
-	default:
-		return nil, errors.Errorf("invalid progress mode %s", mode)
+	d, err := progressui.NewDisplay(out, progressui.DisplayMode(mode), opts...)
+	if err != nil {
+		return nil, err
 	}
 
 	go func() {
-		_, pw.err = progressui.DisplaySolveStatus(ctx, c, out, statusCh, opts...)
+		// not using shared context to not disrupt display but let it finish reporting errors
+		_, pw.err = d.UpdateFrom(ctx, statusCh)
 		close(doneCh)
 	}()
 	return pw, nil

@@ -8,11 +8,12 @@ import (
 )
 
 type copyDTO struct {
-	From maybe.Maybe[either.Either[llb.State, string]]
-	Src  string
-	Dst  string
+	from maybe.Maybe[either.Either[llb.State, string]]
+	src  string
+	dst  string
 
-	Name string
+	name          string
+	progressGroup maybe.Maybe[llb.ConstraintsOpt]
 }
 
 func (conv *CommonConverter) proceedCopy(copyDTO []copyDTO, st llb.State) (llb.State, error) {
@@ -20,7 +21,7 @@ func (conv *CommonConverter) proceedCopy(copyDTO []copyDTO, st llb.State) (llb.S
 		src := conv.buildCtx
 
 		var err error
-		if from, ok := maybe.JustValid(c.From); ok {
+		if from, ok := maybe.JustValid(c.from); ok {
 			from.
 				MapLeft(func(st llb.State) {
 					src = st
@@ -33,10 +34,16 @@ func (conv *CommonConverter) proceedCopy(copyDTO []copyDTO, st llb.State) (llb.S
 			}
 		}
 
+		opts := []llb.ConstraintsOpt{llb.WithCustomName(c.name)}
+
+		if g, ok := maybe.JustValid(c.progressGroup); ok {
+			opts = append(opts, g)
+		}
+
 		st = st.File(llb.Copy(
 			src,
-			c.Src,
-			c.Dst,
+			c.src,
+			c.dst,
 			&llb.CopyInfo{
 				FollowSymlinks:      true,
 				CopyDirContentsOnly: true,
@@ -45,7 +52,7 @@ func (conv *CommonConverter) proceedCopy(copyDTO []copyDTO, st llb.State) (llb.S
 				AllowWildcard:       true,
 				AllowEmptyWildcard:  true,
 			},
-		), llb.WithCustomName(c.Name))
+		), opts...)
 	}
 
 	return st, nil

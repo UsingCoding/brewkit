@@ -53,6 +53,11 @@ func (conv *VarsConverter) VarsToLLB(
 }
 
 func (conv *VarsConverter) varToState(ctx context.Context, v api.Var) (llb.State, error) {
+	g, err := conv.makeProgressGroup(v.Name)
+	if err != nil {
+		return llb.State{}, err
+	}
+
 	st := conv.llbImage(v.From)
 
 	st = st.WithValue(targetKey, v.Name)
@@ -65,16 +70,17 @@ func (conv *VarsConverter) varToState(ctx context.Context, v api.Var) (llb.State
 		st = st.AddEnv(k, v)
 	}
 
-	st, err := conv.proceedCopy(slices.Map(v.Copy, func(c api.CopyVar) copyDTO {
+	st, err = conv.proceedCopy(slices.Map(v.Copy, func(c api.CopyVar) copyDTO {
 		from := maybe.Map(c.From, func(image string) either.Either[llb.State, string] {
 			return either.NewRight[llb.State, string](image)
 		})
 
 		return copyDTO{
-			From: from,
-			Src:  c.Src,
-			Dst:  c.Dst,
-			Name: makeCopyLabelVar(v.Name, c),
+			from:          from,
+			src:           c.Src,
+			dst:           c.Dst,
+			name:          makeCopyLabelVar(v.Name, c),
+			progressGroup: maybe.NewJust(g),
 		}
 	}), st)
 	if err != nil {
@@ -85,13 +91,14 @@ func (conv *VarsConverter) varToState(ctx context.Context, v api.Var) (llb.State
 	payload := progresscatcher.MakeCatchLabelPayload(v.Name)
 
 	st, err = conv.proceedCommand(ctx, cmdDTO{
-		name:         v.Name,
-		command:      maybe.NewJust(v.Command),
-		cache:        v.Cache,
-		ssh:          v.SSH,
-		secrets:      v.Secrets,
-		ignoreCache:  true, // ignore build cache for variables
-		labelPayload: payload,
+		name:          v.Name,
+		command:       maybe.NewJust(v.Command),
+		cache:         v.Cache,
+		ssh:           v.SSH,
+		secrets:       v.Secrets,
+		ignoreCache:   true, // always ignore build cache for variables
+		progressGroup: maybe.NewJust(g),
+		labelPayload:  payload,
 	}, st)
 	if err != nil {
 		return llb.State{}, err

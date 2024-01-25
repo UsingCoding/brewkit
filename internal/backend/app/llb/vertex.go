@@ -121,7 +121,17 @@ func (conv *VertexConverter) vertexToState(ctx context.Context, v *api.Vertex) (
 	return st, nil
 }
 
-func (conv *VertexConverter) populateState(ctx context.Context, vertexName string, s api.Stage, st llb.State) (llb.State, error) {
+func (conv *VertexConverter) populateState(
+	ctx context.Context,
+	vertexName string,
+	s api.Stage,
+	st llb.State,
+) (llb.State, error) {
+	g, err := conv.makeProgressGroup(vertexName)
+	if err != nil {
+		return llb.State{}, err
+	}
+
 	if w, ok := maybe.JustValid(s.WorkDir); ok {
 		st = st.Dir(w)
 	}
@@ -131,16 +141,17 @@ func (conv *VertexConverter) populateState(ctx context.Context, vertexName strin
 	}
 
 	dtos, err := slices.MapErr(s.Copy, func(c api.Copy) (copyDTO, error) {
-		from, err := conv.convertFromForCopy(ctx, c.From)
-		if err != nil {
-			return copyDTO{}, err
+		from, err2 := conv.convertFromForCopy(ctx, c.From)
+		if err2 != nil {
+			return copyDTO{}, err2
 		}
 
 		return copyDTO{
-			From: from,
-			Src:  c.Src,
-			Dst:  c.Dst,
-			Name: makeCopyLabelVertex(vertexName, c),
+			from:          from,
+			src:           c.Src,
+			dst:           c.Dst,
+			name:          makeCopyLabelVertex(vertexName, c),
+			progressGroup: maybe.NewJust(g),
 		}, nil
 	})
 	if err != nil {
@@ -153,12 +164,13 @@ func (conv *VertexConverter) populateState(ctx context.Context, vertexName strin
 	}
 
 	st, err = conv.proceedCommand(ctx, cmdDTO{
-		name:    vertexName,
-		params:  conv.vars,
-		command: s.Command,
-		cache:   s.Cache,
-		ssh:     s.SSH,
-		secrets: s.Secrets,
+		name:          vertexName,
+		params:        conv.vars,
+		command:       s.Command,
+		cache:         s.Cache,
+		ssh:           s.SSH,
+		secrets:       s.Secrets,
+		progressGroup: maybe.NewJust(g),
 	}, st)
 	if err != nil {
 		return llb.State{}, err

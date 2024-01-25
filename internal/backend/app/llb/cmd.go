@@ -20,11 +20,13 @@ type cmdDTO struct {
 	name         string
 	labelPayload map[string]string
 
-	command     maybe.Maybe[api.Command]
-	cache       []api.Cache
-	ssh         maybe.Maybe[api.SSH]
-	secrets     []api.Secret
-	ignoreCache bool
+	command maybe.Maybe[api.Command]
+	cache   []api.Cache
+	ssh     maybe.Maybe[api.SSH]
+	secrets []api.Secret
+
+	ignoreCache   bool
+	progressGroup maybe.Maybe[llb.ConstraintsOpt]
 
 	params map[string]string
 }
@@ -56,6 +58,10 @@ func (conv *CommonConverter) proceedCommand(ctx context.Context, c cmdDTO, st ll
 
 	options := []llb.RunOption{
 		llb.Args(args),
+	}
+
+	if g, ok := maybe.JustValid(c.progressGroup); ok {
+		options = append(options, g)
 	}
 
 	if s, ok := maybe.JustValid(conv.proceedSSH(c.ssh)); ok {
@@ -102,12 +108,12 @@ func defaultShell() []string {
 }
 
 func customCmdName(name string, args []string) string {
-	a := processArgs(args)
+	a := shortenArgs(args)
 
 	return name + ": " + a
 }
 
-func processArgs(args []string) string {
+func shortenArgs(args []string) string {
 	const (
 		maxLen = 15
 	)
