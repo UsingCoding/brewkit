@@ -53,6 +53,11 @@ func (conv *CommonConverter) resolveImages(
 	// sync access to conv.resolvedImages
 	var m sync.Mutex
 
+	resolveMode := llb.ResolveModePreferLocal
+	if conv.forcePull {
+		resolveMode = llb.ResolveModeForcePull
+	}
+
 	eg, ctx := errgroup.WithContext(ctx)
 	for ref := range images {
 		imgRef := ref
@@ -65,7 +70,7 @@ func (conv *CommonConverter) resolveImages(
 			}
 
 			_, _, data, err := client.ResolveImageConfig(ctx, named.String(), llb.ResolveImageConfigOpt{
-				ResolveMode: llb.ResolveModePreferLocal.String(),
+				ResolveMode: resolveMode.String(),
 			})
 			if err != nil {
 				return errors.Wrapf(err, "failed to resolve img %s", imgRef)

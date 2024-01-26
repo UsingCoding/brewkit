@@ -10,6 +10,7 @@ func NewConverter(
 	buildCtx string,
 	cacheNamespace string,
 	disableProgressGrouping bool,
+	forcePull bool,
 ) *CommonConverter {
 	return &CommonConverter{
 		buildCtx: llb.Local(
@@ -18,6 +19,7 @@ func NewConverter(
 		),
 		cacheNs:                 cacheNamespace,
 		disableProgressGrouping: disableProgressGrouping,
+		forcePull:               forcePull,
 		caches:                  map[string]llb.MountOption{},
 		resolvedImages:          map[string]image{},
 	}
@@ -29,6 +31,7 @@ type CommonConverter struct {
 	cacheNs  string
 
 	disableProgressGrouping bool
+	forcePull               bool
 
 	caches         map[string]llb.MountOption
 	resolvedImages map[string]image

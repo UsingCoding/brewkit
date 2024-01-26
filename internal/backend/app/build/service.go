@@ -70,6 +70,7 @@ func (s *service) Build(
 		buildCtxKey,
 		cacheNamespace,
 		s.params.DisableProgressGrouping,
+		params.ForcePull,
 	)
 
 	solver := buildSolver{
