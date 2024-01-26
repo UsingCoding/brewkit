@@ -1,6 +1,8 @@
 package builddefinition
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	stdslices "golang.org/x/exp/slices"
 
@@ -115,7 +117,14 @@ func (builder *vertexGraphBuilder) recursiveGraph(vertex string) (api.Vertex, er
 		Stage:     stage,
 		From:      fromV,
 		DependsOn: dependsOn,
+		Private:   privateVertex(vertex),
 	}, nil
+}
+
+func privateVertex(name string) bool {
+	const privateVPrefix = "_"
+
+	return strings.HasPrefix(name, privateVPrefix)
 }
 
 // solves 'from' dependencies

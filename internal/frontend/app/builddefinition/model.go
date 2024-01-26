@@ -14,7 +14,7 @@ type Definition struct {
 
 func (d Definition) Vertex(name string) maybe.Maybe[api.Vertex] {
 	i := stdslices.IndexFunc(d.Vertexes, func(vertex api.Vertex) bool {
-		return vertex.Name == name
+		return vertex.Name == name && !vertex.Private
 	})
 	if i == -1 {
 		return maybe.Maybe[api.Vertex]{}

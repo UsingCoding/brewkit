@@ -3,7 +3,7 @@ package version
 const (
 	// APIVersionV2 - actual version
 	APIVersionV2 = "brewkit/v2"
-	// APIVersionV1 - soon will be deprecated
+	// APIVersionV1 - deprecated, soon will be removed
 	APIVersionV1 = "brewkit/v1"
 )
 

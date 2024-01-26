@@ -20,7 +20,7 @@ local gosources = [
 
 {
     project():: {
-        apiVersion: "brewkit/v1",
+        apiVersion: "brewkit/v2",
 
         vars: {
             gitcommit: {
@@ -32,75 +32,42 @@ local gosources = [
         },
 
         targets: {
-            all: ["build", "check", "modulesvendor"],
-
-            gosources: {
-                from: "scratch",
-                workdir: "/app",
-                copy: [copy(source, source) for source in gosources]
-            },
-
-            gobase: {
-                from: images.golang,
-                workdir: "/app",
-                env: {
-                    GOCACHE: "/app/cache/go-build",
-                },
-                copy: copyFrom(
-                    'gosources',
-                    '/app',
-                    '/app'
-                ),
-            },
+            all: ["build", "test", "lint"],
 
             build: {
-                from: "gobase",
+                from: "_gobase",
                 cache: gocache,
-                workdir: "/app",
-                dependsOn: ['modules'],
-                command: std.format('
-                    go build \\
-                    -trimpath -v \\
-                    -ldflags "-X main.Commit=${gitcommit} -X main.DockerfileImage=%s" \\
-                    -o ./bin/brewkit ./cmd/brewkit
-                ', [images.dockerfile]),
-                output: {
-                    artifact: "/app/bin/brewkit",
-                    "local": "./bin"
-                }
+                copy: [
+                    // copy go.mod changes
+                    copyFrom(
+                        'modules',
+                        '/app/go.*',
+                        '.'
+                    )
+                ],
+                ssh: {},
+                command: 'go build -trimpath -v -ldflags "-X main.Commit=${gitcommit}" -o ./bin/brewkit ./cmd/brewkit',
+                output: "/app/bin/brewkit:./bin/",
+            },
+
+            test: {
+                from: "_gobase",
+                cache: gocache,
+                dependsOn: ["modules"],
+                command: "go test ./..."
             },
 
             modules: {
-                from: "gobase",
+                from: "_gobase",
+                copy: copyFrom(
+                    '_gosources',
+                    '/app',
+                    '/app'
+                ),
                 cache: gocache,
-                workdir: "/app",
+                ssh: {},
                 command: "go mod tidy",
-                output: {
-                    artifact: "/app/go.*",
-                    "local": ".",
-                },
-            },
-
-            // export local copy of dependencies for ide index
-            modulesvendor: {
-                from: "gobase",
-                workdir: "/app",
-                cache: gocache,
-                dependsOn: ['modules'],
-                command: "go mod vendor",
-                output: {
-                    artifact: "/app/vendor",
-                    "local": "vendor",
-                },
-            },
-
-            check: ["test", "lint"],
-
-            test: {
-                from: "gobase",
-                workdir: "/app",
-                cache: gocache,
-                command: "go test ./...",
+                output: "/app/go.*:.",
             },
 
             lint: {
@@ -109,7 +76,7 @@ local gosources = [
                 cache: gocache,
                 copy: [
                     copyFrom(
-                        'gosources',
+                        '_gosources',
                         '/app',
                         '/app'
                     ),
@@ -120,6 +87,27 @@ local gosources = [
                     GOLANGCI_LINT_CACHE: "/app/cache/go-build"
                 },
                 command: "golangci-lint run"
+            },
+
+            // contains project go sources
+            _gosources: {
+                from: "scratch",
+                workdir: "/app",
+                copy: [copy(source, source) for source in gosources]
+            },
+
+            // base stage for all go targets
+            _gobase: {
+                from: "golang:1.20",
+                workdir: "/app",
+                env: {
+                    GOCACHE: "/app/cache/go-build",
+                },
+                copy: copyFrom(
+                    '_gosources',
+                    '/app',
+                    '/app'
+                ),
             },
         }
     }

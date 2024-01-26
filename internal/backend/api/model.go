@@ -13,6 +13,8 @@ type Vertex struct {
 
 	From      maybe.Maybe[*Vertex] // Parent vertex. Not available for vertexes with Image
 	DependsOn []Vertex
+
+	Private bool
 }
 
 type Stage struct {
