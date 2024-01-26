@@ -151,7 +151,7 @@ func (conv *VertexConverter) populateState(
 			src:           c.Src,
 			dst:           c.Dst,
 			name:          makeCopyLabelVertex(vertexName, c),
-			progressGroup: maybe.NewJust(g),
+			progressGroup: g,
 		}, nil
 	})
 	if err != nil {
@@ -170,7 +170,7 @@ func (conv *VertexConverter) populateState(
 		cache:         s.Cache,
 		ssh:           s.SSH,
 		secrets:       s.Secrets,
-		progressGroup: maybe.NewJust(g),
+		progressGroup: g,
 	}, st)
 	if err != nil {
 		return llb.State{}, err

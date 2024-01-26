@@ -35,11 +35,13 @@ type Service interface {
 func NewService(
 	connector buildkit.Connector,
 	sshAgentProvider ssh.AgentProvider,
+	params ServiceParams,
 	verbose bool,
 ) Service {
 	return &service{
 		connector:        connector,
 		sshAgentProvider: sshAgentProvider,
+		params:           params,
 		verbose:          verbose,
 	}
 }
@@ -47,6 +49,7 @@ func NewService(
 type service struct {
 	connector        buildkit.Connector
 	sshAgentProvider ssh.AgentProvider
+	params           ServiceParams
 
 	verbose bool
 }
@@ -66,6 +69,7 @@ func (s *service) Build(
 	conv := llbconv.NewConverter(
 		buildCtxKey,
 		cacheNamespace,
+		s.params.DisableProgressGrouping,
 	)
 
 	solver := buildSolver{

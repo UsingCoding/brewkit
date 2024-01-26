@@ -41,6 +41,11 @@ func build(workdir string) *cli.Command {
 				Aliases: []string{"p"},
 				EnvVars: []string{"BREWKIT_FORCE_PULL"},
 			},
+			&cli.BoolFlag{
+				Name:    "disable-progress-grouping",
+				Usage:   "Always pull a newer version of images for targets",
+				EnvVars: []string{"BREWKIT_DISABLE_PROGRESS_GROUPING"},
+			},
 		},
 		Action: executeBuild,
 		Subcommands: []*cli.Command{
@@ -63,6 +68,8 @@ type buildOps struct {
 	BuildDefinition string
 	Context         string
 	ForcePull       bool
+
+	DisableProgressGrouping bool
 }
 
 func (o *buildOps) scan(ctx *cli.Context) {
@@ -70,6 +77,7 @@ func (o *buildOps) scan(ctx *cli.Context) {
 	o.BuildDefinition = ctx.String("definition")
 	o.Context = ctx.String("context")
 	o.ForcePull = ctx.Bool("force-pull")
+	o.DisableProgressGrouping = ctx.Bool("disable-progress-grouping")
 }
 
 func executeBuild(ctx *cli.Context) error {
@@ -132,8 +140,6 @@ func executeCompileBuildDefinition(ctx *cli.Context) error {
 }
 
 func makeBuildService(options buildOps) (service.BuildService, error) {
-	parser := infrabuilddefinition.Parser{}
-
 	logger := makeLogger(options.verbose)
 
 	config, err := parseConfig(options.configPath, logger)
@@ -158,11 +164,14 @@ func makeBuildService(options buildOps) (service.BuildService, error) {
 	buildService := buildapp.NewService(
 		buildkitd.NewConnector(),
 		agentProvider,
+		buildapp.ServiceParams{
+			DisableProgressGrouping: options.DisableProgressGrouping,
+		},
 		options.verbose,
 	)
 
 	return service.NewBuildService(
-		parser,
+		infrabuilddefinition.Parser{},
 		builddefinition.NewBuilder(),
 		buildLegacyService,
 		buildService,

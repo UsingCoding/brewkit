@@ -9,15 +9,17 @@ import (
 func NewConverter(
 	buildCtx string,
 	cacheNamespace string,
+	disableProgressGrouping bool,
 ) *CommonConverter {
 	return &CommonConverter{
 		buildCtx: llb.Local(
 			buildCtx,
 			llb.WithCustomName(progresslabel.MakeLabelf(progresslabel.InternalLabel, "Loading context")),
 		),
-		cacheNs:        cacheNamespace,
-		caches:         map[string]llb.MountOption{},
-		resolvedImages: map[string]image{},
+		cacheNs:                 cacheNamespace,
+		disableProgressGrouping: disableProgressGrouping,
+		caches:                  map[string]llb.MountOption{},
+		resolvedImages:          map[string]image{},
 	}
 }
 
@@ -25,6 +27,8 @@ func NewConverter(
 type CommonConverter struct {
 	buildCtx llb.State
 	cacheNs  string
+
+	disableProgressGrouping bool
 
 	caches         map[string]llb.MountOption
 	resolvedImages map[string]image

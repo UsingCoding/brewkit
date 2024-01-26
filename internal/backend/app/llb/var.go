@@ -80,7 +80,7 @@ func (conv *VarsConverter) varToState(ctx context.Context, v api.Var) (llb.State
 			src:           c.Src,
 			dst:           c.Dst,
 			name:          makeCopyLabelVar(v.Name, c),
-			progressGroup: maybe.NewJust(g),
+			progressGroup: g,
 		}
 	}), st)
 	if err != nil {
@@ -97,7 +97,7 @@ func (conv *VarsConverter) varToState(ctx context.Context, v api.Var) (llb.State
 		ssh:           v.SSH,
 		secrets:       v.Secrets,
 		ignoreCache:   true, // always ignore build cache for variables
-		progressGroup: maybe.NewJust(g),
+		progressGroup: g,
 		labelPayload:  payload,
 	}, st)
 	if err != nil {
