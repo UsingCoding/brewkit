@@ -43,7 +43,7 @@ func build(workdir string) *cli.Command {
 			},
 			&cli.BoolFlag{
 				Name:    "disable-progress-grouping",
-				Usage:   "Always pull a newer version of images for targets",
+				Usage:   "Disable progress grouping for llb solving",
 				EnvVars: []string{"BREWKIT_DISABLE_PROGRESS_GROUPING"},
 			},
 		},
