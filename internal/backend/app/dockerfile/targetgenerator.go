@@ -213,7 +213,7 @@ func (generator targetGenerator) instructionsForStage(stage api.Stage) ([]docker
 	if maybe.Valid(stage.Command) {
 		var network string
 		if maybe.Valid(stage.Network) {
-			network = maybe.Just(stage.Network).Network
+			network = string(maybe.Just(stage.Network))
 		}
 
 		cmd := strings.Join(maybe.Just(stage.Command).Cmd, " ")

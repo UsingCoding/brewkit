@@ -211,6 +211,11 @@ func mapStage(
 		return api.Stage{}, errors.Wrapf(err, "failed to map secrets in %s stage", stageName)
 	}
 
+	n, err := mapNetwork(s.Network)
+	if err != nil {
+		return api.Stage{}, errors.Wrapf(err, "failed to map network in %s stage", stageName)
+	}
+
 	return api.Stage{
 		From: s.From,
 		Platform: maybe.Map(s.Platform, func(p string) string {
@@ -220,11 +225,7 @@ func mapStage(
 		Env:     s.Env,
 		Cache:   slices.Map(s.Cache, mapCache),
 		Copy:    copies,
-		Network: maybe.Map(s.Network, func(n string) api.Network {
-			return api.Network{
-				Network: n,
-			}
-		}),
+		Network: n,
 		SSH: maybe.Map(s.SSH, func(s buildconfig.SSH) api.SSH {
 			return api.SSH{}
 		}),
@@ -276,4 +277,23 @@ func mapSecret(secret buildconfig.Secret, secrets []config.Secret) (api.Secret, 
 		ID:        secret.ID,
 		MountPath: secret.Path,
 	}, nil
+}
+
+func mapNetwork(network maybe.Maybe[string]) (maybe.Maybe[api.Network], error) {
+	n, ok := maybe.JustValid(network)
+	if !ok {
+		return maybe.Maybe[api.Network]{}, nil
+	}
+
+	var net api.Network
+	switch n {
+	case "host":
+		net = api.HostNetwork
+	case "none":
+		net = api.NoneNetwork
+	default:
+		return maybe.Maybe[api.Network]{}, errors.Errorf("unknown network %s", n)
+	}
+
+	return maybe.NewJust(net), nil
 }

@@ -86,7 +86,7 @@ func (generator varGenerator) instructionsForVar(v api.Var) []dockerfile.Instruc
 
 	var network string
 	if maybe.Valid(v.Network) {
-		network = maybe.Just(v.Network).Network
+		network = string(maybe.Just(v.Network))
 	}
 
 	cmd := strings.Join(v.Command.Cmd, " ")

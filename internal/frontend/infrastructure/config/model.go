@@ -1,7 +1,8 @@
 package config
 
 type Config struct {
-	Secrets []Secret `json:"secrets"`
+	Secrets      []Secret `json:"secrets"`
+	Entitlements []string `json:"entitlements"`
 }
 
 type Secret struct {

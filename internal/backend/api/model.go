@@ -18,14 +18,14 @@ type Vertex struct {
 }
 
 type Stage struct {
-	From     string               // From for stage
-	Platform maybe.Maybe[string]  // Platform for image
-	WorkDir  maybe.Maybe[string]  // Working directory for stage
-	Env      map[string]string    // Stage env
-	Cache    []Cache              // Pluggable cache for build systems
-	Copy     []Copy               // Copy local or build stages artifacts
-	Network  maybe.Maybe[Network] // Network options
-	SSH      maybe.Maybe[SSH]     // SSH access options
+	From     string              // From for stage
+	Platform maybe.Maybe[string] // Platform for image
+	WorkDir  maybe.Maybe[string] // Working directory for stage
+	Env      map[string]string   // Stage env
+	Cache    []Cache             // Pluggable cache for build systems
+	Copy     []Copy              // Copy local or build stages artifacts
+	Network  maybe.Maybe[Network]
+	SSH      maybe.Maybe[SSH] // SSH access options
 	Secrets  []Secret
 	Command  maybe.Maybe[Command] // Command for stage
 	Output   []Output             // Output artifacts from builder
@@ -87,10 +87,6 @@ type SecretSrc struct {
 
 type SSH struct{}
 
-type Network struct {
-	Network string // It may be Host and other docker networks
-}
-
 type Command struct {
 	Cmd   []string
 	Shell bool
@@ -100,3 +96,18 @@ type Output struct {
 	Artifact string
 	Local    string
 }
+
+type Network string
+
+const (
+	// HostNetwork - allow stage access to host network
+	HostNetwork = "host"
+	// NoneNetwork - disable network for stage
+	NoneNetwork = "none"
+)
+
+type Entitlement string
+
+const (
+	EntitlementNetworkHost Entitlement = "network.host"
+)

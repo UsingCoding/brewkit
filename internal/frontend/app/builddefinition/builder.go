@@ -49,6 +49,11 @@ func (builder builder) variables(vars []buildconfig.VarData, secrets []config.Se
 			return api.Var{}, errors.Wrapf(err, "failed to map secrets in %s variable", v.Name)
 		}
 
+		network, err := mapNetwork(v.Network)
+		if err != nil {
+			return api.Var{}, errors.Wrapf(err, "failed to map network in %s variable", v.Name)
+		}
+
 		return api.Var{
 			Name: v.Name,
 			From: v.From,
@@ -59,11 +64,7 @@ func (builder builder) variables(vars []buildconfig.VarData, secrets []config.Se
 			Env:     v.Env,
 			Cache:   slices.Map(v.Cache, mapCache),
 			Copy:    slices.Map(v.Copy, mapCopy),
-			Network: maybe.Map(v.Network, func(n string) api.Network {
-				return api.Network{
-					Network: n,
-				}
-			}),
+			Network: network,
 			SSH: maybe.Map(v.SSH, func(s buildconfig.SSH) api.SSH {
 				return api.SSH{}
 			}),

@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-jsonnet"
 	"github.com/pkg/errors"
 
+	"github.com/ispringtech/brewkit/internal/common/maps"
 	"github.com/ispringtech/brewkit/internal/common/slices"
 	"github.com/ispringtech/brewkit/internal/frontend/app/config"
 )
@@ -40,6 +41,11 @@ func (p Parser) Config(configPath string) (config.Config, error) {
 		return config.Config{}, errors.Wrap(err, "failed to parse json config")
 	}
 
+	entitlements, err := maps.SetFromSliceErr(c.Entitlements, mapEntitlement)
+	if err != nil {
+		return config.Config{}, err
+	}
+
 	return config.Config{
 		Secrets: slices.Map(c.Secrets, func(s Secret) config.Secret {
 			return config.Secret{
@@ -47,6 +53,7 @@ func (p Parser) Config(configPath string) (config.Config, error) {
 				Path: os.ExpandEnv(s.Path),
 			}
 		}),
+		Entitlement: entitlements,
 	}, nil
 }
 
@@ -58,8 +65,20 @@ func (p Parser) Dump(srcConfig config.Config) ([]byte, error) {
 				Path: s.Path,
 			}
 		}),
+		Entitlements: maps.ToSlice(srcConfig.Entitlement, func(e config.Entitlement, s struct{}) string {
+			return string(e)
+		}),
 	}
 
 	data, err := json.Marshal(c)
 	return data, errors.Wrap(err, "failed to marshal config to json")
+}
+
+func mapEntitlement(e string) (config.Entitlement, error) {
+	switch e {
+	case "network.host":
+		return config.EntitlementNetworkHost, nil
+	default:
+		return "", errors.Errorf("unknown entitlement %s", e)
+	}
 }

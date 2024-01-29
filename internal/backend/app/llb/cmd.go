@@ -24,6 +24,7 @@ type cmdDTO struct {
 	cache   []api.Cache
 	ssh     maybe.Maybe[api.SSH]
 	secrets []api.Secret
+	network maybe.Maybe[api.Network]
 
 	ignoreCache   bool
 	progressGroup maybe.Maybe[llb.ConstraintsOpt]
@@ -58,6 +59,10 @@ func (conv *CommonConverter) proceedCommand(ctx context.Context, c cmdDTO, st ll
 
 	options := []llb.RunOption{
 		llb.Args(args),
+	}
+
+	if n, ok := maybe.JustValid(c.network); ok {
+		options = append(options, conv.network(n))
 	}
 
 	if g, ok := maybe.JustValid(c.progressGroup); ok {

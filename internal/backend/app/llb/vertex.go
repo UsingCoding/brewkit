@@ -170,6 +170,7 @@ func (conv *VertexConverter) populateState(
 		cache:         s.Cache,
 		ssh:           s.SSH,
 		secrets:       s.Secrets,
+		network:       s.Network,
 		progressGroup: g,
 	}, st)
 	if err != nil {

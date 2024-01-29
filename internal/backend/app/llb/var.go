@@ -96,6 +96,7 @@ func (conv *VarsConverter) varToState(ctx context.Context, v api.Var) (llb.State
 		cache:         v.Cache,
 		ssh:           v.SSH,
 		secrets:       v.Secrets,
+		network:       v.Network,
 		ignoreCache:   true, // always ignore build cache for variables
 		progressGroup: g,
 		labelPayload:  payload,

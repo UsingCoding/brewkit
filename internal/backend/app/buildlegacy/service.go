@@ -45,22 +45,19 @@ type buildService struct {
 
 func (service *buildService) Build(
 	ctx context.Context,
-	v api.Vertex,
-	vars []api.Var,
-	secretsSrc []api.SecretSrc,
 	params api.BuildParams,
 ) error {
-	err := service.prePullImages(ctx, v, vars, params.ForcePull)
+	err := service.prePullImages(ctx, params.V, params.Vars, params.ForcePull)
 	if err != nil {
 		return err
 	}
 
-	varsMap, err := service.calculateVars(ctx, vars)
+	varsMap, err := service.calculateVars(ctx, params.Vars)
 	if err != nil {
 		return err
 	}
 
-	return service.buildVertex(ctx, v, varsMap, secretsSrc)
+	return service.buildVertex(ctx, params.V, varsMap, params.Secrets)
 }
 
 func (service *buildService) calculateVars(ctx context.Context, vars []api.Var) (dockerfile.Vars, error) {

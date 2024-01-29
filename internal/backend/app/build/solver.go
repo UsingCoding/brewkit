@@ -2,21 +2,26 @@ package build
 
 import (
 	"context"
+	"fmt"
 
 	buildkitclient "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/client/llb"
 	gatewayclient "github.com/moby/buildkit/frontend/gateway/client"
 	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/util/entitlements"
 	"github.com/moby/buildkit/util/progress/progresswriter"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/ispringtech/brewkit/internal/backend/api"
 	"github.com/ispringtech/brewkit/internal/backend/app/buildkit"
+	"github.com/ispringtech/brewkit/internal/common/maps"
 )
 
 type buildSolver struct {
 	client  buildkit.Client
 	context string // path to context
+
+	entitlements maps.Set[api.Entitlement]
 }
 
 func (s buildSolver) solve(
@@ -44,6 +49,14 @@ func (s buildSolver) solve(
 			buildCtxKey: s.context,
 		},
 		Session: attachable,
+		AllowedEntitlements: maps.ToSlice(s.entitlements, func(e api.Entitlement, s struct{}) entitlements.Entitlement {
+			switch e {
+			case api.EntitlementNetworkHost:
+				return entitlements.EntitlementNetworkHost
+			default:
+				panic(fmt.Sprintf("unknown entitlement %s", e))
+			}
+		}),
 	}
 
 	eg.Go(func() error {
@@ -70,7 +83,7 @@ func (s buildSolver) solve(
 			},
 			pw.Status(),
 		)
-		return errors.Wrap(err, "failed to solve")
+		return err
 	})
 
 	eg.Go(func() error {

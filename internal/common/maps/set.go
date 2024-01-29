@@ -22,6 +22,13 @@ func SetFromSlice[T any, E comparable](s []T, f func(T) E) Set[E] {
 	})
 }
 
+func SetFromSliceErr[T any, E comparable](s []T, f func(T) (E, error)) (Set[E], error) {
+	return FromSliceErr(s, func(v T) (E, struct{}, error) {
+		e, err := f(v)
+		return e, struct{}{}, err
+	})
+}
+
 // FromMapKeys creates set from maps keys
 func FromMapKeys[K comparable, V any](maps ...map[K]V) Set[K] {
 	res := Set[K]{}

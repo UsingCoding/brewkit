@@ -10,7 +10,7 @@ type API interface {
 }
 
 type BuilderAPI interface {
-	Build(ctx context.Context, v Vertex, vars []Var, secretsSrc []SecretSrc, params BuildParams) error
+	Build(ctx context.Context, params BuildParams) error
 }
 
 type CacheAPI interface {

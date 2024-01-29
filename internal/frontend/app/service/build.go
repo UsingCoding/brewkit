@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/ispringtech/brewkit/internal/backend/api"
+	"github.com/ispringtech/brewkit/internal/common/maps"
 	"github.com/ispringtech/brewkit/internal/common/maybe"
 	"github.com/ispringtech/brewkit/internal/common/slices"
 	"github.com/ispringtech/brewkit/internal/frontend/app/buildconfig"
@@ -82,14 +83,24 @@ func (service *buildService) Build(ctx context.Context, p BuildParams) error {
 		}
 	})
 
+	entitlement := maps.Map(service.config.Entitlement, func(e appconfig.Entitlement, s struct{}) (api.Entitlement, struct{}) {
+		switch e {
+		case appconfig.EntitlementNetworkHost:
+			return api.EntitlementNetworkHost, struct{}{}
+		default:
+			panic(fmt.Sprintf("unknown entitlement %s", e))
+		}
+	})
+
 	return service.builderAPI(c.APIVersion).Build(
 		ctx,
-		vertex,
-		definition.Vars,
-		secrets,
 		api.BuildParams{
-			Context:   p.Context,
-			ForcePull: p.ForcePull,
+			Context:      p.Context,
+			V:            vertex,
+			Vars:         definition.Vars,
+			Secrets:      secrets,
+			Entitlements: entitlement,
+			ForcePull:    p.ForcePull,
 		},
 	)
 }

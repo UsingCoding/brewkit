@@ -56,9 +56,6 @@ type service struct {
 
 func (s *service) Build(
 	ctx context.Context,
-	v api.Vertex,
-	vars []api.Var,
-	secrets []api.SecretSrc,
 	params api.BuildParams,
 ) error {
 	client, err := s.connector.ConnectToMoby(ctx)
@@ -74,16 +71,17 @@ func (s *service) Build(
 	)
 
 	solver := buildSolver{
-		client:  client,
-		context: params.Context,
+		client:       client,
+		context:      params.Context,
+		entitlements: params.Entitlements,
 	}
 
-	varsData, err := s.solveVars(ctx, solver, conv, vars, secrets)
+	varsData, err := s.solveVars(ctx, solver, conv, params.Vars, params.Secrets)
 	if err != nil {
 		return errors.Wrap(err, "failed to solve vars")
 	}
 
-	err = s.solveVertex(ctx, solver, conv, v, secrets, varsData)
+	err = s.solveVertex(ctx, solver, conv, params.V, params.Secrets, varsData)
 	if err != nil {
 		return errors.Wrap(err, "failed to solve build vertex")
 	}
