@@ -71,7 +71,6 @@ func (c *outputCatcher) intercept(s *buildkitclient.SolveStatus) error {
 
 		data := make([]byte, len(log.Data))
 		_ = copy(data, log.Data)
-		_ = k
 
 		c.logs[k] = append(c.logs[k], data...)
 	}

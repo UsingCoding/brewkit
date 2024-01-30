@@ -23,13 +23,13 @@ func executeVersion(ctx *cli.Context) error {
 	logger := makeLogger(opt.verbose)
 
 	v := struct {
-		APIVersion string `json:"apiVersion"`
-		Commit     string `json:"commit"`
-		Dockerfile string `json:"dockerfile"`
+		APIVersions []string `json:"apiVersions"`
+		Commit      string   `json:"commit"`
+		Dockerfile  string   `json:"dockerfile"`
 	}{
-		APIVersion: appversion.APIVersionV1,
-		Commit:     Commit,
-		Dockerfile: DockerfileImage,
+		APIVersions: appversion.SupportedVersions(),
+		Commit:      Commit,
+		Dockerfile:  DockerfileImage,
 	}
 
 	bytes, err := json.Marshal(v)

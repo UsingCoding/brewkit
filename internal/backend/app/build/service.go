@@ -175,8 +175,8 @@ func makeVarsProgressWriter(ctx context.Context) (progresswriter.Writer, progres
 		return nil, nil, err
 	}
 
-	pw, catcher := progresscatcher.New(pw)
 	pw = progresslabel.NewLabelsCleaner(pw)
+	pw, catcher := progresscatcher.New(pw)
 
 	return pw, catcher, nil
 }
