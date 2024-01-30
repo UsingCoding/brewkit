@@ -52,14 +52,16 @@ func runApp(ctx context.Context, args []string) error {
 	}
 
 	app := &cli.App{
-		Name:  appID,
-		Usage: "Container-native build system",
+		Name:                 appID,
+		Usage:                "Container-native build system",
+		EnableBashCompletion: true,
 		Commands: []*cli.Command{
 			build(workdir),
 			config(),
 			version(),
 			cache(),
 			fmtCommand(),
+			completion(),
 		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -76,7 +78,7 @@ func runApp(ctx context.Context, args []string) error {
 			},
 			&cli.StringFlag{
 				Name:    "docker-config",
-				Usage:   "Path to docker client config",
+				Usage:   "Path to docker client config: Deprecated, use env DOCKER_CONFIG as for docker CLI",
 				Aliases: []string{"dc"},
 				EnvVars: []string{"BREWKIT_DOCKER_CONFIG"},
 			},

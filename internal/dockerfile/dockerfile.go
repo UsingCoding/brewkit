@@ -1,3 +1,4 @@
+// Package dockerfile depracted: soon will be removed
 package dockerfile
 
 import (

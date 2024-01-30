@@ -14,6 +14,7 @@ local gocache = [
 local gosources = [
     "go.mod",
     "go.sum",
+    "data",
     "cmd",
     "internal",
 ];
@@ -45,7 +46,6 @@ local gosources = [
                         '.'
                     )
                 ],
-                ssh: {},
                 command: 'go build -trimpath -v -ldflags "-X main.Commit=${gitcommit}" -o ./bin/brewkit ./cmd/brewkit',
                 output: "/app/bin/brewkit:./bin/",
             },
