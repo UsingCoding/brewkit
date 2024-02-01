@@ -57,6 +57,7 @@ func runApp(ctx context.Context, args []string) error {
 		EnableBashCompletion: true,
 		Commands: []*cli.Command{
 			build(workdir),
+			buildShort(workdir),
 			config(),
 			version(),
 			cache(),

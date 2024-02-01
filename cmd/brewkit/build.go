@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"path"
+	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 
 	buildapp "github.com/ispringtech/brewkit/internal/backend/app/build"
@@ -10,16 +14,51 @@ import (
 	"github.com/ispringtech/brewkit/internal/backend/infrastructure/buildkitd"
 	"github.com/ispringtech/brewkit/internal/backend/infrastructure/docker"
 	"github.com/ispringtech/brewkit/internal/backend/infrastructure/ssh"
+	"github.com/ispringtech/brewkit/internal/common/maybe"
+	"github.com/ispringtech/brewkit/internal/common/slices"
 	"github.com/ispringtech/brewkit/internal/frontend/app/buildconfig"
 	"github.com/ispringtech/brewkit/internal/frontend/app/builddefinition"
 	"github.com/ispringtech/brewkit/internal/frontend/app/service"
 	infrabuilddefinition "github.com/ispringtech/brewkit/internal/frontend/infrastructure/builddefinition"
 )
 
+const (
+	targetPrefix = "+"
+)
+
 func build(workdir string) *cli.Command {
 	return &cli.Command{
 		Name:  "build",
-		Usage: "Build project from build definition",
+		Usage: "Build definition manipulation",
+		BashComplete: func(ctx *cli.Context) {
+			// print default completion
+			cli.DefaultCompleteWithFlags(ctx.Command)(ctx)
+
+			buildService, opts, err := makeBuildServiceCtx(ctx)
+			if err != nil {
+				return
+			}
+
+			targets, err := buildService.ListTargets(opts.BuildDefinition)
+			if err != nil {
+				return
+			}
+
+			writer := ctx.App.Writer
+			zsh := strings.HasSuffix(os.Getenv("SHELL"), "zsh")
+
+			for _, target := range targets {
+				// print target name to stdout
+				name := targetPrefix + target
+
+				if zsh {
+					// add grouping information for zsh
+					name += ":Build target"
+				}
+
+				_, _ = fmt.Fprintf(writer, "%s\n", name)
+			}
+		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "definition",
@@ -37,7 +76,7 @@ func build(workdir string) *cli.Command {
 			},
 			&cli.BoolFlag{
 				Name:    "force-pull",
-				Usage:   "Always pull a newer version of images for targets",
+				Usage:   "Always pull a newer version of images",
 				Aliases: []string{"p"},
 				EnvVars: []string{"BREWKIT_FORCE_PULL"},
 			},
@@ -63,7 +102,7 @@ func build(workdir string) *cli.Command {
 	}
 }
 
-type buildOps struct {
+type buildOpt struct {
 	commonOpt
 	BuildDefinition string
 	Context         string
@@ -72,7 +111,7 @@ type buildOps struct {
 	DisableProgressGrouping bool
 }
 
-func (o *buildOps) scan(ctx *cli.Context) {
+func (o *buildOpt) scan(ctx *cli.Context) {
 	o.commonOpt.scan(ctx)
 	o.BuildDefinition = ctx.String("definition")
 	o.Context = ctx.String("context")
@@ -81,8 +120,13 @@ func (o *buildOps) scan(ctx *cli.Context) {
 }
 
 func executeBuild(ctx *cli.Context) error {
-	var opts buildOps
+	var opts buildOpt
 	opts.scan(ctx)
+
+	targets, err := normalizeTargets(ctx.Args().Slice())
+	if err != nil {
+		return err
+	}
 
 	buildService, err := makeBuildService(opts)
 	if err != nil {
@@ -90,7 +134,7 @@ func executeBuild(ctx *cli.Context) error {
 	}
 
 	return buildService.Build(ctx.Context, service.BuildParams{
-		Targets:         ctx.Args().Slice(),
+		Targets:         targets,
 		BuildDefinition: opts.BuildDefinition,
 		Context:         opts.Context,
 		ForcePull:       opts.ForcePull,
@@ -98,7 +142,7 @@ func executeBuild(ctx *cli.Context) error {
 }
 
 func executeBuildDefinition(ctx *cli.Context) error {
-	var opts buildOps
+	var opts buildOpt
 	opts.scan(ctx)
 
 	logger := makeLogger(opts.verbose)
@@ -119,7 +163,7 @@ func executeBuildDefinition(ctx *cli.Context) error {
 }
 
 func executeCompileBuildDefinition(ctx *cli.Context) error {
-	var opts buildOps
+	var opts buildOpt
 	opts.scan(ctx)
 
 	logger := makeLogger(opts.verbose)
@@ -139,7 +183,15 @@ func executeCompileBuildDefinition(ctx *cli.Context) error {
 	return nil
 }
 
-func makeBuildService(options buildOps) (service.BuildService, error) {
+func makeBuildServiceCtx(ctx *cli.Context) (service.BuildService, buildOpt, error) {
+	var opts buildOpt
+	opts.scan(ctx)
+
+	buildService, err := makeBuildService(opts)
+	return buildService, opts, err
+}
+
+func makeBuildService(options buildOpt) (service.BuildService, error) {
 	logger := makeLogger(options.verbose)
 
 	config, err := parseConfig(options.configPath, logger)
@@ -177,4 +229,33 @@ func makeBuildService(options buildOps) (service.BuildService, error) {
 		buildService,
 		config,
 	), nil
+}
+
+func normalizeTargets(args []string) ([]string, error) {
+	if len(args) == 0 {
+		return nil, nil
+	}
+
+	// if first target starts with targetPrefix so each target *must* starts with targetPrefix
+	if !strings.HasPrefix(args[0], targetPrefix) {
+		// return targets as it is
+		return args, nil
+	}
+
+	argWithoutPrefix := slices.Find(args, func(a string) bool {
+		return !strings.HasPrefix(a, targetPrefix)
+	})
+
+	if maybe.Valid(argWithoutPrefix) {
+		return nil, errors.Errorf(
+			"arg without %s prefix used as target name: %s",
+			targetPrefix,
+			maybe.Just(argWithoutPrefix),
+		)
+	}
+
+	// clear targetPrefix
+	return slices.Map(args, func(a string) string {
+		return strings.TrimLeft(a, targetPrefix)
+	}), nil
 }

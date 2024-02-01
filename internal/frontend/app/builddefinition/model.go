@@ -5,6 +5,7 @@ import (
 
 	"github.com/ispringtech/brewkit/internal/backend/api"
 	"github.com/ispringtech/brewkit/internal/common/maybe"
+	"github.com/ispringtech/brewkit/internal/common/slices"
 )
 
 type Definition struct {
@@ -21,4 +22,13 @@ func (d Definition) Vertex(name string) maybe.Maybe[api.Vertex] {
 	}
 
 	return maybe.NewJust(d.Vertexes[i])
+}
+
+func (d Definition) ListPublicTargetNames() []string {
+	return slices.MapMaybe(d.Vertexes, func(v api.Vertex) maybe.Maybe[string] {
+		if v.Private {
+			return maybe.Maybe[string]{}
+		}
+		return maybe.NewJust(v.Name)
+	})
 }

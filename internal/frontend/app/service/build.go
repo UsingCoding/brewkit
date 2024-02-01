@@ -23,6 +23,7 @@ const (
 
 type BuildService interface {
 	Build(ctx context.Context, p BuildParams) error
+	ListTargets(buildDefinition string) ([]string, error)
 
 	DumpBuildDefinition(ctx context.Context, configPath string) (string, error)
 	DumpCompiledBuildDefinition(ctx context.Context, configPath string) (string, error)
@@ -103,6 +104,20 @@ func (service *buildService) Build(ctx context.Context, p BuildParams) error {
 			ForcePull:    p.ForcePull,
 		},
 	)
+}
+
+func (service *buildService) ListTargets(buildDefinition string) ([]string, error) {
+	c, err := service.configParser.Parse(buildDefinition)
+	if err != nil {
+		return nil, err
+	}
+
+	definition, err := service.definitionBuilder.Build(c, service.config.Secrets)
+	if err != nil {
+		return nil, err
+	}
+
+	return definition.ListPublicTargetNames(), nil
 }
 
 func (service *buildService) DumpBuildDefinition(_ context.Context, configPath string) (string, error) {
