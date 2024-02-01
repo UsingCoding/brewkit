@@ -7,6 +7,12 @@
             "items": {
                 "$ref": "#/$defs/secret"
             }
+        },
+        "entitlements": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/entitlement"
+            }
         }
     },
 
@@ -24,6 +30,12 @@
                 }
             },
             "required": [ "id", "path" ]
+        },
+        "entitlement": {
+            "type": "string",
+            "enum": [
+                "network.host"
+            ]
         }
     }
 }

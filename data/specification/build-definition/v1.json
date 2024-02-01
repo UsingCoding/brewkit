@@ -6,7 +6,8 @@
             "description": "Api version of build definition",
             "type": "string",
             "enum": [
-                "brewkit/v1"
+                "brewkit/v1",
+                "brewkit/v2"
             ]
         },
         "vars": {
