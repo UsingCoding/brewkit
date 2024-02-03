@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/ispringtech/brewkit/internal/backend/api"
 )
 
 type ClearCacheParam struct {
-	All bool
+	KeepBytes    int64
+	KeepDuration time.Duration
+	All          bool
 }
 
 type Cache interface {
@@ -24,6 +27,8 @@ type cacheService struct {
 
 func (service *cacheService) ClearCache(ctx context.Context, param ClearCacheParam) (<-chan api.UsageInfo, error) {
 	return service.cacheAPI.ClearCache(ctx, api.ClearParams{
-		All: param.All,
+		KeepBytes:    param.KeepBytes,
+		KeepDuration: param.KeepDuration,
+		All:          param.All,
 	})
 }

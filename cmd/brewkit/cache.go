@@ -34,17 +34,26 @@ func cacheClear() *cli.Command {
 				Aliases: []string{"a"},
 				Usage:   "Clear all cache, not just dangling ones",
 			},
+			&cli.DurationFlag{
+				Name:  "keep-duration",
+				Usage: "Keep cache older than",
+			},
+			&cli.Int64Flag{
+				Name:  "keep-bytes",
+				Usage: "Keep cache bytes",
+			},
 		},
 		Action: func(ctx *cli.Context) error {
 			var opts commonOpt
 			opts.scan(ctx)
-			clearAll := ctx.Bool("all")
 
 			cacheAPI := backendcache.NewCacheService(buildkitd.NewConnector())
 			cacheService := service.NewCacheService(cacheAPI)
 
 			infos, err := cacheService.ClearCache(ctx.Context, service.ClearCacheParam{
-				All: clearAll,
+				KeepBytes:    ctx.Int64("keep-bytes"),
+				KeepDuration: ctx.Duration("keep-duration"),
+				All:          ctx.Bool("all"),
 			})
 			if err != nil {
 				return err
