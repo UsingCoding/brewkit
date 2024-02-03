@@ -3,7 +3,6 @@ package progress
 
 import (
 	"context"
-	"os"
 
 	"github.com/containerd/console"
 	"github.com/moby/buildkit/client"
@@ -45,10 +44,6 @@ func NewPrinter(
 	pw := &printer{
 		status: statusCh,
 		done:   doneCh,
-	}
-
-	if v := os.Getenv("BUILDKIT_PROGRESS"); v != "" && mode == "auto" {
-		mode = v
 	}
 
 	d, err := progressui.NewDisplay(out, progressui.DisplayMode(mode), opts...)

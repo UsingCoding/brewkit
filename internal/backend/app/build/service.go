@@ -110,7 +110,7 @@ func (s *service) solveVars(
 				err error
 			)
 
-			pw, catcher, err = makeVarsProgressWriter(ctx)
+			pw, catcher, err = s.makeVarsProgressWriter(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -125,6 +125,10 @@ func (s *service) solveVars(
 			return llbconv.NewVarsConverter(conv).VarsToLLB(ctx, vars, client)
 		},
 	)
+	if err != nil {
+		return nil, err
+	}
+
 	logs := catcher.Logs()
 	if len(logs) == 0 {
 		return nil, err
@@ -149,7 +153,7 @@ func (s *service) solveVertex(
 	return solver.solve(
 		ctx,
 		func() (progresswriter.Writer, error) {
-			return makeVertexProgressWriter(ctx)
+			return s.makeVertexProgressWriter(ctx)
 		},
 		func() ([]session.Attachable, error) {
 			return s.makeVertexAttachable(v, secrets)
@@ -164,11 +168,11 @@ func (s *service) solveVertex(
 	)
 }
 
-func makeVarsProgressWriter(ctx context.Context) (progresswriter.Writer, progresscatcher.OutputCatcher, error) {
+func (s *service) makeVarsProgressWriter(ctx context.Context) (progresswriter.Writer, progresscatcher.OutputCatcher, error) {
 	pw, err := progress.NewPrinter(
 		ctx,
 		os.Stderr,
-		progress.AUTO,
+		s.params.ProgressMode,
 		progressui.WithPhase("Solving variables"),
 	)
 	if err != nil {
@@ -181,11 +185,11 @@ func makeVarsProgressWriter(ctx context.Context) (progresswriter.Writer, progres
 	return pw, catcher, nil
 }
 
-func makeVertexProgressWriter(ctx context.Context) (progresswriter.Writer, error) {
+func (s *service) makeVertexProgressWriter(ctx context.Context) (progresswriter.Writer, error) {
 	pw, err := progress.NewPrinter(
 		ctx,
 		os.Stderr,
-		progress.AUTO,
+		s.params.ProgressMode,
 		progressui.WithPhase("Building vertex"),
 	)
 	if err != nil {

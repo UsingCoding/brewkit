@@ -15,5 +15,4 @@ type Client interface {
 		buildFunc gatewayclient.BuildFunc,
 		statusChan chan *buildkitclient.SolveStatus,
 	) (*buildkitclient.SolveResponse, error)
-	Native() *buildkitclient.Client
 }

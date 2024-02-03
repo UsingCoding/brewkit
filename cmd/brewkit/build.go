@@ -74,6 +74,12 @@ func build(workdir string) *cli.Command {
 				Value:   workdir,
 				EnvVars: []string{"BREWKIT_CONTEXT"},
 			},
+			&cli.StringFlag{
+				Name:        "progress",
+				Usage:       "Progress modes",
+				DefaultText: "auto",
+				EnvVars:     []string{"BREWKIT_BUILD__PROGRESS"},
+			},
 			&cli.BoolFlag{
 				Name:    "force-pull",
 				Usage:   "Always pull a newer version of images",
@@ -108,6 +114,7 @@ type buildOpt struct {
 	Context         string
 	ForcePull       bool
 
+	Progress                string
 	DisableProgressGrouping bool
 }
 
@@ -116,6 +123,7 @@ func (o *buildOpt) scan(ctx *cli.Context) {
 	o.BuildDefinition = ctx.String("definition")
 	o.Context = ctx.String("context")
 	o.ForcePull = ctx.Bool("force-pull")
+	o.Progress = ctx.String("progress")
 	o.DisableProgressGrouping = ctx.Bool("disable-progress-grouping")
 }
 
@@ -218,6 +226,7 @@ func makeBuildService(options buildOpt) (service.BuildService, error) {
 		agentProvider,
 		buildapp.ServiceParams{
 			DisableProgressGrouping: options.DisableProgressGrouping,
+			ProgressMode:            options.Progress,
 		},
 		options.verbose,
 	)
