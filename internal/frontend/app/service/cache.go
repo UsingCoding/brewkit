@@ -11,7 +11,7 @@ type ClearCacheParam struct {
 }
 
 type Cache interface {
-	ClearCache(ctx context.Context, param ClearCacheParam) error
+	ClearCache(ctx context.Context, param ClearCacheParam) (<-chan api.UsageInfo, error)
 }
 
 func NewCacheService(cacheAPI api.CacheAPI) Cache {
@@ -22,7 +22,7 @@ type cacheService struct {
 	cacheAPI api.CacheAPI
 }
 
-func (service *cacheService) ClearCache(ctx context.Context, param ClearCacheParam) error {
+func (service *cacheService) ClearCache(ctx context.Context, param ClearCacheParam) (<-chan api.UsageInfo, error) {
 	return service.cacheAPI.ClearCache(ctx, api.ClearParams{
 		All: param.All,
 	})

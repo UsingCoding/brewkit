@@ -14,5 +14,5 @@ type BuilderAPI interface {
 }
 
 type CacheAPI interface {
-	ClearCache(ctx context.Context, params ClearParams) error
+	ClearCache(ctx context.Context, params ClearParams) (<-chan UsageInfo, error)
 }

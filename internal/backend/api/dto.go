@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/ispringtech/brewkit/internal/common/maps"
 )
 
@@ -22,5 +24,17 @@ type BootstrapParams struct {
 }
 
 type ClearParams struct {
-	All bool
+	KeepBytes    int64
+	KeepDuration time.Duration
+	All          bool
+}
+
+type UsageInfo struct {
+	ID      string
+	Mutable bool
+	InUse   bool
+	Size    int64
+	Shared  bool
+
+	Err error
 }

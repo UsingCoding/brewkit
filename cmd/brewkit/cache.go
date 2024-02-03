@@ -1,10 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"text/tabwriter"
+
+	"github.com/tonistiigi/units"
 	"github.com/urfave/cli/v2"
 
+	"github.com/ispringtech/brewkit/internal/backend/api"
 	backendcache "github.com/ispringtech/brewkit/internal/backend/app/cache"
-	"github.com/ispringtech/brewkit/internal/backend/infrastructure/docker"
+	"github.com/ispringtech/brewkit/internal/backend/infrastructure/buildkitd"
 	"github.com/ispringtech/brewkit/internal/frontend/app/service"
 )
 
@@ -34,19 +40,62 @@ func cacheClear() *cli.Command {
 			opts.scan(ctx)
 			clearAll := ctx.Bool("all")
 
-			logger := makeLogger(opts.verbose)
+			cacheAPI := backendcache.NewCacheService(buildkitd.NewConnector())
+			cacheService := service.NewCacheService(cacheAPI)
 
-			dockerClient, err := docker.NewClient(opts.dockerClientConfigPath, logger)
+			infos, err := cacheService.ClearCache(ctx.Context, service.ClearCacheParam{
+				All: clearAll,
+			})
 			if err != nil {
 				return err
 			}
 
-			cacheAPI := backendcache.NewCacheService(dockerClient)
-			cacheService := service.NewCacheService(cacheAPI)
+			tw := tabwriter.NewWriter(os.Stdout, 1, 8, 1, '\t', 0)
+			first := true
+			total := int64(0)
 
-			return cacheService.ClearCache(ctx.Context, service.ClearCacheParam{
-				All: clearAll,
-			})
+			for {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case info, ok := <-infos:
+					if !ok {
+						// Reset tabwriter
+						tw = tabwriter.NewWriter(os.Stdout, 1, 8, 1, '\t', 0)
+						fmt.Fprintf(tw, "Total:\t%.2f\n", units.Bytes(total))
+						tw.Flush()
+						return nil
+					}
+
+					if info.Err != nil {
+						return err
+					}
+
+					total += info.Size
+					if first {
+						printTableHeader(tw)
+						first = false
+					}
+					printTableRow(tw, info)
+					tw.Flush()
+				}
+			}
 		},
 	}
+}
+
+func printTableHeader(tw *tabwriter.Writer) {
+	fmt.Fprintln(tw, "ID\tRECLAIMABLE\tSIZE\tLAST ACCESSED")
+}
+
+func printTableRow(tw *tabwriter.Writer, usageInfo api.UsageInfo) {
+	id := usageInfo.ID
+	if usageInfo.Mutable {
+		id += "*"
+	}
+	size := fmt.Sprintf("%.2f", units.Bytes(usageInfo.Size))
+	if usageInfo.Shared {
+		size += "*"
+	}
+	fmt.Fprintf(tw, "%-71s\t%-11v\t%s\t\n", id, !usageInfo.InUse, size)
 }
