@@ -76,7 +76,7 @@ func build(workdir string) *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:        "progress",
-				Usage:       "Progress modes",
+				Usage:       "Progress modes: auto, plain, rawjson, quiet",
 				DefaultText: "auto",
 				EnvVars:     []string{"BREWKIT_BUILD__PROGRESS"},
 			},

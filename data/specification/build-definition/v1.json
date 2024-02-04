@@ -63,7 +63,6 @@
             },
             "required": [
                 "from",
-                "workdir",
                 "command"
             ]
         },
@@ -124,12 +123,11 @@
                     "$ref": "#/$defs/components/command"
                 },
                 "output": {
-                    "$ref": "#/$defs/components/output"
+                    "$ref": "#/$defs/components/outputs"
                 }
             },
             "required": [
-                "from",
-                "workdir"
+                "from"
             ]
         },
 
@@ -263,8 +261,28 @@
                 "description": "Command that should be run in shell",
                 "type": "string"
             },
-            "output": {
+            "outputs": {
                 "description": "Definition of stage output",
+                "oneOf": [
+                    {
+                        "$ref": "#/$defs/components/outputshort"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/$defs/components/outputshort"
+                        }
+                    },
+                    {
+                        "$ref": "#/$defs/components/output"
+                    }
+                ]
+            },
+            "outputshort": {
+                "description": "Output short notation - src:dst",
+                "type": "string"
+            },
+            "output": {
                 "type": "object",
                 "properties": {
                     "artifact": {

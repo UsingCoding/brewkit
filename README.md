@@ -30,7 +30,7 @@ BrewKit focuses on repeatable builds, host agnostic and build process containeri
 
 Install BrewKit via go >= 1.20 
 ```shell
-go install github.com/ispringtech/brewkit
+go install github.com/ispringtech/brewkit/cmd/brewkit
 ```
 
 Create `brewkit.jsonnet`
@@ -66,10 +66,20 @@ Run build
 ```shell
 brewkit build
 
- => [internal] load build definition from Dockerfile                                                                                                                                                           0.1s
- => => transferring dockerfile: 3.45kB                                                                                                                                                                         0.0s
- => [internal] load .dockerignore                                                                                                                                                                              0.1s
- => => transferring context: 2B
+ => resolve image config for docker.io/golangci/golangci-lint:v1.53                                                                                                                                         0.0s
+ => resolve image config for docker.io/library/golang:1.20                                                                                                                                                  0.0s
+ => [internal] Loading context                                                                                                                                                                              0.1s
+ => => transferring build-context: 71.42kB                                                                                                                                                                  0.1s
+ => CACHED docker-image://docker.io/library/golang:1.20                                                                                                                                                     0.0s
+ => CACHED docker-image://docker.io/golangci/golangci-lint:v1.53                                                                                                                                            0.0s
+ => _gosources                                                                                                                                                                                              0.2s
+ => _gobase                                                                                                                                                                                                 0.1s
+ => lint                                                                                                                                                                                                    2.7s
+ => modules                                                                                                                                                                                                 1.0s
+ => build                                                                                                                                                                                                   3.3s
+ => test                                                                                                                                                                                                    1.7s
+ => exporting to client directory                                                                                                                                                                           0.2s 
+ => => copying files 30.83MB
 # ...
 ```
 

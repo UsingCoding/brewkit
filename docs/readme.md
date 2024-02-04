@@ -7,3 +7,4 @@
 * [**CLI**](cli/overview.md)
 
 * [Architecture](architecture.md)
+* [Changelog](changelog/changelog.md)

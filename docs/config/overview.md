@@ -28,3 +28,18 @@ Define secret to use in build-definition. See [secrets in build-definition](/doc
     ]
 }
 ```
+
+### Entitlements
+
+Allow brewkit some of the entitlements from buildkit.
+For instance - use network host `network.host`
+
+```jsonnet
+{
+    "entitlements": [
+        "network.host"
+    ]
+}
+```
+
+Full list of available entitlements in config schema as enum (see [Schema v1](/data/specification/config/v1.json))

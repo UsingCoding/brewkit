@@ -254,7 +254,14 @@ Ssh defined for now as empty object for further customization
 
 ### Network
 
-Define network for target. Supported all network which supported by docker
+Define network for target.
+
+| Name    | Description                                | Requirements                                        |
+|---------|--------------------------------------------|-----------------------------------------------------|
+| default | Default value - isolated container network | None                                                |
+| none    | Disable network for stage                  | None                                                |
+| host    | Allow container access host network        | Requires network.host entitlement in brewkit config |
+
 
 ### Command
 
@@ -285,18 +292,29 @@ Vars values can be used in commands
 
 ### Output
 
-Output artifacts from targets. Artifacts exported with current user id, **so no root owned artifacts**
+Output artifacts from targets. Artifacts exported with current user id, **so no root owned artifacts**.
+You can define output in short notation: `src:dst`
 
 ```jsonnet
     targets: {
         gobuild: {
             command: 'go build -o ./bin/brewkit ./cmd/brewkit',
-            output: {
-                // export /app/bin/brewkit from container               
-                artifact: "/app/bin/brewkit",
-                // export to ./bin folder                
-                "local": "./bin"
-            }            
+            // export /app/bin/brewkit from container to local ./bin folder           
+            output: "/app/bin/brewkit:./bin"
+        },
+    }
+```
+
+Multiple outputs supported:
+
+```jsonnet
+    targets: {
+        gobuild: {
+            command: 'go build -o ./bin/brewkit ./cmd/brewkit',
+            output: [
+                "/app/bin/brewkit:./bin",
+                "/app/go.mod:."
+            ]
         },
     }
 ```
