@@ -36,13 +36,11 @@ func NewService(
 	connector buildkit.Connector,
 	sshAgentProvider ssh.AgentProvider,
 	params ServiceParams,
-	verbose bool,
 ) Service {
 	return &service{
 		connector:        connector,
 		sshAgentProvider: sshAgentProvider,
 		params:           params,
-		verbose:          verbose,
 	}
 }
 
@@ -50,8 +48,6 @@ type service struct {
 	connector        buildkit.Connector
 	sshAgentProvider ssh.AgentProvider
 	params           ServiceParams
-
-	verbose bool
 }
 
 func (s *service) Build(
@@ -110,7 +106,7 @@ func (s *service) solveVars(
 				err error
 			)
 
-			pw, catcher, err = s.makeVarsProgressWriter(ctx)
+			pw, catcher, err = s.makeVarsProgressWriter(context.Background())
 			if err != nil {
 				return nil, err
 			}
@@ -153,7 +149,7 @@ func (s *service) solveVertex(
 	return solver.solve(
 		ctx,
 		func() (progresswriter.Writer, error) {
-			return s.makeVertexProgressWriter(ctx)
+			return s.makeVertexProgressWriter(context.Background())
 		},
 		func() ([]session.Attachable, error) {
 			return s.makeVertexAttachable(v, secrets)

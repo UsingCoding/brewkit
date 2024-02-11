@@ -216,7 +216,6 @@ func makeBuildService(options buildOpt) (service.BuildService, error) {
 			DisableProgressGrouping: options.DisableProgressGrouping,
 			ProgressMode:            options.Progress,
 		},
-		options.verbose,
 	)
 
 	return service.NewBuildService(

@@ -41,7 +41,8 @@ func (s buildSolver) solve(
 		return err
 	}
 
-	eg, ctx := errgroup.WithContext(ctx)
+	var eg *errgroup.Group
+	eg, ctx = errgroup.WithContext(ctx)
 
 	opt := buildkitclient.SolveOpt{
 		Exports: exports,
