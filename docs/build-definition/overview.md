@@ -99,6 +99,25 @@ All `apiVersion` schemas placed - [build-definition](/data/specification/build-d
 
 So when run `brewkit build` brewkit executes `all` target.
 
+## Definition arguments
+
+You can pass external arguments to build-definition.
+```shell
+# pass via env
+export BREWKIT_DEF_ARG=version=1.22
+
+# pass via cli args
+brewkit b --def-arg version=1.22
+```
+
+Access args from build-defintion:
+
+```jsonnet
+local defArgSet = std.native('defArgSet');
+local defArg = std.native('defArg');
+
+if defArgSet("version") then {version: defArg("version")} else {}
+```
 ## jsonnet
 
 BrewKit use jsonnet as build-definition language. 

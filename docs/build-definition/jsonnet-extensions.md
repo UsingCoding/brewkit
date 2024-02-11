@@ -82,3 +82,32 @@ local secret = std.native('secret');
     }
 //    
 ```
+
+## defArgSet
+
+Allow to check if defArg is set
+
+```jsonnet
+local defArgSet = std.native('defArgSet');
+
+if defArgSet("version") then {versionExists: true} else {}
+```
+
+## defArg
+
+Returns defArg value. Returns empty string on non-existing argument
+
+```jsonnet
+local defArgSet = std.native('defArgSet');
+local defArg = std.native('defArg');
+
+if defArgSet("version") then {version: defArg("version")} else {}
+```
+
+Or simplified:
+
+```jsonnet
+local defArg = std.native('defArg');
+
+if defArg("version") != "" then {version: defArg("version")} else {}
+```

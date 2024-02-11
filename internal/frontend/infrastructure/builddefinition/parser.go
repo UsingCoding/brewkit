@@ -18,8 +18,8 @@ import (
 
 type Parser struct{}
 
-func (parser Parser) Parse(configPath string) (buildconfig.Config, error) {
-	data, err := parser.compileConfig(configPath)
+func (parser Parser) Parse(spec buildconfig.Spec) (buildconfig.Config, error) {
+	data, err := parser.compileConfig(spec)
 	if err != nil {
 		return buildconfig.Config{}, err
 	}
@@ -34,23 +34,23 @@ func (parser Parser) Parse(configPath string) (buildconfig.Config, error) {
 	return mapConfig(c)
 }
 
-func (parser Parser) CompileConfig(configPath string) (string, error) {
-	return parser.compileConfig(configPath)
+func (parser Parser) CompileConfig(spec buildconfig.Spec) (string, error) {
+	return parser.compileConfig(spec)
 }
 
-func (parser Parser) compileConfig(configPath string) (string, error) {
-	fileBytes, err := os.ReadFile(configPath)
+func (parser Parser) compileConfig(spec buildconfig.Spec) (string, error) {
+	fileBytes, err := os.ReadFile(spec.Path)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to read build config file")
 	}
 
 	vm := jsonnet.MakeVM()
 
-	for _, f := range funcs {
+	for _, f := range funcs(funcsContext{args: spec.Args}) {
 		vm.NativeFunction(f.nativeFunc())
 	}
 
-	data, err := vm.EvaluateAnonymousSnippet(path.Base(configPath), string(fileBytes))
+	data, err := vm.EvaluateAnonymousSnippet(path.Base(spec.Path), string(fileBytes))
 	return data, errors.Wrap(err, "failed to compile jsonnet for build definition")
 }
 

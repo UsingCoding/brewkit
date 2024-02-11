@@ -23,15 +23,15 @@ const (
 
 type BuildService interface {
 	Build(ctx context.Context, p BuildParams) error
-	ListTargets(buildDefinition string) ([]string, error)
+	ListTargets(spec buildconfig.Spec) ([]string, error)
 
-	DumpBuildDefinition(ctx context.Context, configPath string) (string, error)
-	DumpCompiledBuildDefinition(ctx context.Context, configPath string) (string, error)
+	DumpBuildDefinition(spec buildconfig.Spec) (string, error)
+	DumpCompiledBuildDefinition(spec buildconfig.Spec) (string, error)
 }
 
 type BuildParams struct {
-	Targets         []string // Target names to run
-	BuildDefinition string
+	Targets []string // Target names to run
+	Spec    buildconfig.Spec
 
 	Context   string
 	ForcePull bool
@@ -62,7 +62,7 @@ type buildService struct {
 }
 
 func (service *buildService) Build(ctx context.Context, p BuildParams) error {
-	c, err := service.configParser.Parse(p.BuildDefinition)
+	c, err := service.configParser.Parse(p.Spec)
 	if err != nil {
 		return err
 	}
@@ -106,8 +106,8 @@ func (service *buildService) Build(ctx context.Context, p BuildParams) error {
 	)
 }
 
-func (service *buildService) ListTargets(buildDefinition string) ([]string, error) {
-	c, err := service.configParser.Parse(buildDefinition)
+func (service *buildService) ListTargets(spec buildconfig.Spec) ([]string, error) {
+	c, err := service.configParser.Parse(spec)
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +120,8 @@ func (service *buildService) ListTargets(buildDefinition string) ([]string, erro
 	return definition.ListPublicTargetNames(), nil
 }
 
-func (service *buildService) DumpBuildDefinition(_ context.Context, configPath string) (string, error) {
-	c, err := service.configParser.Parse(configPath)
+func (service *buildService) DumpBuildDefinition(spec buildconfig.Spec) (string, error) {
+	c, err := service.configParser.Parse(spec)
 	if err != nil {
 		return "", err
 	}
@@ -139,8 +139,8 @@ func (service *buildService) DumpBuildDefinition(_ context.Context, configPath s
 	return string(d), nil
 }
 
-func (service *buildService) DumpCompiledBuildDefinition(_ context.Context, configPath string) (string, error) {
-	return service.configParser.CompileConfig(configPath)
+func (service *buildService) DumpCompiledBuildDefinition(spec buildconfig.Spec) (string, error) {
+	return service.configParser.CompileConfig(spec)
 }
 
 func (service *buildService) buildVertex(targets []string, definition builddefinition.Definition) (api.Vertex, error) {

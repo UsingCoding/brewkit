@@ -10,6 +10,37 @@ type nativeFunc interface {
 	nativeFunc() *jsonnet.NativeFunction
 }
 
+type nativeFunc1[V string] struct {
+	name string
+	v    argDesc
+	f    func(v V) (interface{}, error)
+}
+
+func (f nativeFunc1[V]) nativeFunc() *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name: f.name,
+		Func: errWrapper(
+			f.name,
+			func(i []interface{}) (interface{}, error) {
+				const argsCount = 1
+				if len(i) != argsCount {
+					return nil, errors.Errorf("not enough arguments to call, expected %d", argsCount)
+				}
+
+				v, err := checkArg[V](f.v, i[0])
+				if err != nil {
+					return nil, err
+				}
+
+				return f.f(v)
+			},
+		),
+		Params: []ast.Identifier{
+			ast.Identifier(f.v.name),
+		},
+	}
+}
+
 type nativeFunc2[V1, V2 any] struct {
 	name string
 	v1   argDesc

@@ -32,7 +32,10 @@ func build(workdir string) *cli.Command {
 				return
 			}
 
-			targets, err := buildService.ListTargets(opts.BuildDefinition)
+			targets, err := buildService.ListTargets(buildconfig.Spec{
+				Path: opts.buildDefinition,
+				Args: opts.defArgs,
+			})
 			if err != nil {
 				return
 			}
@@ -79,6 +82,11 @@ func build(workdir string) *cli.Command {
 				Aliases: []string{"p"},
 				EnvVars: []string{"BREWKIT_FORCE_PULL"},
 			},
+			&cli.StringSliceFlag{
+				Name:    "def-arg",
+				Usage:   "Definition argument syntax: --build-arg key=value",
+				EnvVars: []string{"BREWKIT_DEF_ARG"},
+			},
 			&cli.BoolFlag{
 				Name:    "disable-progress-grouping",
 				Usage:   "Disable progress grouping for llb solving",
@@ -103,21 +111,23 @@ func build(workdir string) *cli.Command {
 
 type buildOpt struct {
 	commonOpt
-	BuildDefinition string
-	Context         string
-	ForcePull       bool
+	buildDefinition string
+	defArgs         map[string]string
+	context         string
+	forcePull       bool
+	progress        string
 
-	Progress                string
-	DisableProgressGrouping bool
+	disableProgressGrouping bool
 }
 
 func (o *buildOpt) scan(ctx *cli.Context) {
 	o.commonOpt.scan(ctx)
-	o.BuildDefinition = ctx.String("definition")
-	o.Context = ctx.String("context")
-	o.ForcePull = ctx.Bool("force-pull")
-	o.Progress = ctx.String("progress")
-	o.DisableProgressGrouping = ctx.Bool("disable-progress-grouping")
+	o.buildDefinition = ctx.String("definition")
+	o.defArgs = makeDefinitionArgs(ctx.StringSlice("def-arg"))
+	o.context = ctx.String("context")
+	o.forcePull = ctx.Bool("force-pull")
+	o.progress = ctx.String("progress")
+	o.disableProgressGrouping = ctx.Bool("disable-progress-grouping")
 }
 
 func executeBuild(ctx *cli.Context) error {
@@ -130,10 +140,13 @@ func executeBuild(ctx *cli.Context) error {
 	}
 
 	return buildService.Build(ctx.Context, service.BuildParams{
-		Targets:         ctx.Args().Slice(),
-		BuildDefinition: opts.BuildDefinition,
-		Context:         opts.Context,
-		ForcePull:       opts.ForcePull,
+		Targets: ctx.Args().Slice(),
+		Spec: buildconfig.Spec{
+			Path: opts.buildDefinition,
+			Args: opts.defArgs,
+		},
+		Context:   opts.context,
+		ForcePull: opts.forcePull,
 	})
 }
 
@@ -148,7 +161,10 @@ func executeBuildDefinition(ctx *cli.Context) error {
 		return err
 	}
 
-	buildDefinition, err := buildService.DumpBuildDefinition(ctx.Context, opts.BuildDefinition)
+	buildDefinition, err := buildService.DumpBuildDefinition(buildconfig.Spec{
+		Path: opts.buildDefinition,
+		Args: opts.defArgs,
+	})
 	if err != nil {
 		return err
 	}
@@ -169,7 +185,10 @@ func executeCompileBuildDefinition(ctx *cli.Context) error {
 		return err
 	}
 
-	buildDefinition, err := buildService.DumpCompiledBuildDefinition(ctx.Context, opts.BuildDefinition)
+	buildDefinition, err := buildService.DumpCompiledBuildDefinition(buildconfig.Spec{
+		Path: opts.buildDefinition,
+		Args: opts.defArgs,
+	})
 	if err != nil {
 		return err
 	}
@@ -213,8 +232,8 @@ func makeBuildService(options buildOpt) (service.BuildService, error) {
 		buildkitd.NewConnector(),
 		agentProvider,
 		buildapp.ServiceParams{
-			DisableProgressGrouping: options.DisableProgressGrouping,
-			ProgressMode:            options.Progress,
+			DisableProgressGrouping: options.disableProgressGrouping,
+			ProgressMode:            options.progress,
 		},
 	)
 
@@ -225,4 +244,18 @@ func makeBuildService(options buildOpt) (service.BuildService, error) {
 		buildService,
 		config,
 	), nil
+}
+
+func makeDefinitionArgs(args []string) map[string]string {
+	res := map[string]string{}
+	for _, a := range args {
+		parts := strings.Split(a, "=")
+		if len(parts) != 2 {
+			// skip flags in invalid format
+			continue
+		}
+
+		res[parts[0]] = parts[1]
+	}
+	return res
 }
